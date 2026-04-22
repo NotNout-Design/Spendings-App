@@ -1,745 +1,726 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<title>spnd6.html</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-<style type="text/css">
-.s0 { color: #d5b778;}
-.s1 { color: #bcbec4;}
-.s2 { color: #bababa;}
-.s3 { color: #6aab73;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Tracker</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #1c1c1e;
+            --text-main: #ffffff;
+            --text-muted: #8e8e93;
+            --accent-teal: #30d158;
+            --accent-pink: #ff375f;
+            --accent-orange: #ff9f0a;
+            --accent-purple: #bf5af2;
+            --border-color: #38383a;
+            --highlight: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+        h1, h2, h3 { margin-top: 0; }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .stat-title {
+            font-size: 0.9em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            display: inline-block;
+        }
+        
+        .stat-value:hover { opacity: 0.7; }
+        .edit-hint { font-size: 0.4em; color: var(--text-muted); vertical-align: middle; margin-left: 5px; }
+
+        .text-teal { color: var(--accent-teal); }
+        .text-pink { color: var(--accent-pink); }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group.full-width { grid-column: 1 / -1; }
+
+        input, select, button {
+            background-color: #2c2c2e;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1em;
+            font-family: inherit;
+        }
+
+        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+        input:focus, select:focus { outline: none; border-color: var(--accent-teal); }
+
+        button {
+            background-color: var(--accent-teal);
+            color: #000;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.8; }
+        button:disabled { opacity: 0.4; cursor: not-allowed; }
+        
+        .btn-secondary { background-color: #3a3a3c; color: var(--text-main); }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+        th { color: var(--text-muted); font-weight: normal; }
+
+        td.editable { cursor: pointer; transition: background 0.2s; }
+        td.editable:hover { background-color: var(--highlight); border-radius: 4px; }
+
+        .inline-edit-input {
+            width: 100%; padding: 8px; margin: -8px; box-sizing: border-box;
+            background: #000; border: 1px solid var(--accent-teal); color: #fff;
+        }
+
+        .type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .badge-income { background: rgba(48, 209, 88, 0.2); color: var(--accent-teal); }
+        .badge-expense { background: rgba(255, 55, 95, 0.2); color: var(--accent-pink); }
+
+        .delete-btn {
+            background: transparent; color: var(--accent-pink); padding: 5px; width: auto;
+            border: 1px solid var(--accent-pink); font-size: 0.8em;
+        }
+        
+        .delete-btn-modal {
+            background: rgba(255, 55, 95, 0.1); color: var(--accent-pink); padding: 10px 15px; width: auto;
+            border: 1px solid var(--accent-pink); font-size: 1.1em; border-radius: 8px; cursor: pointer;
+        }
+        .delete-btn-modal:hover { background: var(--accent-pink); color: #fff; }
+
+        .daily-group {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            background-color: #2c2c2e;
+        }
+        
+        .daily-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
+        
+        .clickable-date {
+            color: var(--accent-purple); font-weight: bold; cursor: pointer;
+            user-select: none; font-size: 1.1em; transition: opacity 0.2s;
+        }
+        .clickable-date:hover { opacity: 0.8; text-decoration: underline; }
+
+        .daily-stats { display: flex; gap: 15px; font-size: 0.9em; font-weight: bold; }
+        .daily-table { background-color: var(--card-bg); margin-top: 0; }
+        .daily-table td { padding: 10px 15px; font-size: 0.9em; border-bottom: 1px solid var(--border-color); }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-box {
+            background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 450px;
+            border: 1px solid var(--border-color); max-height: 80vh; overflow-y: auto;
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; }
+        .modal-close:hover { color: var(--accent-pink); }
+        .edit-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .edit-row input { flex: 1; }
+    </style>
 </head>
-<body bgcolor="#191a1c">
-<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
-<tr><td><center>
-<font face="Arial, Helvetica" color="#000000">
-spnd6.html</font>
-</center></td></tr></table>
-<pre><span class="s0">&lt;!DOCTYPE </span><span class="s2">html</span><span class="s0">&gt;</span>
-<span class="s0">&lt;html </span><span class="s2">lang</span><span class="s3">=&quot;en&quot;</span><span class="s0">&gt;</span>
-<span class="s0">&lt;head&gt;</span>
-  <span class="s0">&lt;meta </span><span class="s2">charset</span><span class="s3">=&quot;UTF-8&quot;</span><span class="s0">&gt;</span>
-  <span class="s0">&lt;meta </span><span class="s2">name</span><span class="s3">=&quot;viewport&quot; </span><span class="s2">content</span><span class="s3">=&quot;width=device-width, initial-scale=1.0&quot;</span><span class="s0">&gt;</span>
-  <span class="s0">&lt;title&gt;</span><span class="s1">Personal Finance Tracker</span><span class="s0">&lt;/title&gt;</span>
-  <span class="s0">&lt;style&gt;</span>
-    <span class="s1">:root {</span>
-        <span class="s1">--bg-color: #000000;</span>
-        <span class="s1">--card-bg: #1c1c1e;</span>
-        <span class="s1">--text-main: #ffffff;</span>
-        <span class="s1">--text-muted: #8e8e93;</span>
-        <span class="s1">--accent-teal: #30d158;</span>
-        <span class="s1">--accent-pink: #ff375f;</span>
-        <span class="s1">--accent-orange: #ff9f0a;</span>
-        <span class="s1">--accent-purple: #bf5af2;</span>
-        <span class="s1">--border-color: #38383a;</span>
-        <span class="s1">--highlight: rgba(255, 255, 255, 0.1);</span>
-    <span class="s1">}</span>
-
-    <span class="s1">body {</span>
-        <span class="s1">font-family: -apple-system, BlinkMacSystemFont, &quot;Segoe UI&quot;, Roboto, Helvetica, Arial, sans-serif;</span>
-        <span class="s1">background-color: var(--bg-color);</span>
-        <span class="s1">color: var(--text-main);</span>
-        <span class="s1">margin: 0;</span>
-        <span class="s1">padding: 20px;</span>
-        <span class="s1">box-sizing: border-box;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.container { max-width: 900px; margin: 0 auto; }</span>
-    <span class="s1">h1, h2, h3 { margin-top: 0; }</span>
-
-    <span class="s1">.dashboard {</span>
-        <span class="s1">display: grid;</span>
-        <span class="s1">grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));</span>
-        <span class="s1">gap: 15px;</span>
-        <span class="s1">margin-bottom: 25px;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.card {</span>
-        <span class="s1">background-color: var(--card-bg);</span>
-        <span class="s1">padding: 20px;</span>
-        <span class="s1">border-radius: 12px;</span>
-        <span class="s1">box-shadow: 0 4px 6px rgba(0,0,0,0.3);</span>
-        <span class="s1">margin-bottom: 20px;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.stat-title {</span>
-        <span class="s1">font-size: 0.9em;</span>
-        <span class="s1">color: var(--text-muted);</span>
-        <span class="s1">text-transform: uppercase;</span>
-        <span class="s1">letter-spacing: 1px;</span>
-        <span class="s1">margin-bottom: 10px;</span>
-        <span class="s1">display: block;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.stat-value {</span>
-        <span class="s1">font-size: 1.8em;</span>
-        <span class="s1">font-weight: bold;</span>
-        <span class="s1">cursor: pointer;</span>
-        <span class="s1">transition: opacity 0.2s;</span>
-        <span class="s1">display: inline-block;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.stat-value:hover { opacity: 0.7; }</span>
-    <span class="s1">.edit-hint { font-size: 0.4em; color: var(--text-muted); vertical-align: middle; margin-left: 5px; }</span>
-
-    <span class="s1">.text-teal { color: var(--accent-teal); }</span>
-    <span class="s1">.text-pink { color: var(--accent-pink); }</span>
-
-    <span class="s1">.form-grid {</span>
-        <span class="s1">display: grid;</span>
-        <span class="s1">grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));</span>
-        <span class="s1">gap: 15px;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.form-group { display: flex; flex-direction: column; gap: 5px; }</span>
-    <span class="s1">.form-group.full-width { grid-column: 1 / -1; }</span>
-
-    <span class="s1">input, select, button {</span>
-        <span class="s1">background-color: #2c2c2e;</span>
-        <span class="s1">border: 1px solid var(--border-color);</span>
-        <span class="s1">color: var(--text-main);</span>
-        <span class="s1">padding: 12px;</span>
-        <span class="s1">border-radius: 8px;</span>
-        <span class="s1">font-size: 1em;</span>
-        <span class="s1">font-family: inherit;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">input[type=&quot;date&quot;]::-webkit-calendar-picker-indicator { filter: invert(1); }</span>
-    <span class="s1">input:focus, select:focus { outline: none; border-color: var(--accent-teal); }</span>
-
-    <span class="s1">button {</span>
-        <span class="s1">background-color: var(--accent-teal);</span>
-        <span class="s1">color: #000;</span>
-        <span class="s1">font-weight: bold;</span>
-        <span class="s1">cursor: pointer;</span>
-        <span class="s1">border: none;</span>
-        <span class="s1">transition: opacity 0.2s;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">button:hover { opacity: 0.8; }</span>
-    <span class="s1">button:disabled { opacity: 0.4; cursor: not-allowed; }</span>
-
-    <span class="s1">.btn-secondary { background-color: #3a3a3c; color: var(--text-main); }</span>
-
-    <span class="s1">table { width: 100%; border-collapse: collapse; margin-top: 15px; }</span>
-    <span class="s1">th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }</span>
-    <span class="s1">th { color: var(--text-muted); font-weight: normal; }</span>
-
-    <span class="s1">td.editable { cursor: pointer; transition: background 0.2s; }</span>
-    <span class="s1">td.editable:hover { background-color: var(--highlight); border-radius: 4px; }</span>
-
-    <span class="s1">.inline-edit-input {</span>
-        <span class="s1">width: 100%; padding: 8px; margin: -8px; box-sizing: border-box;</span>
-        <span class="s1">background: #000; border: 1px solid var(--accent-teal); color: #fff;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }</span>
-    <span class="s1">.badge-income { background: rgba(48, 209, 88, 0.2); color: var(--accent-teal); }</span>
-    <span class="s1">.badge-expense { background: rgba(255, 55, 95, 0.2); color: var(--accent-pink); }</span>
-
-    <span class="s1">.delete-btn {</span>
-        <span class="s1">background: transparent; color: var(--accent-pink); padding: 5px; width: auto;</span>
-        <span class="s1">border: 1px solid var(--accent-pink); font-size: 0.8em;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.delete-btn-modal {</span>
-        <span class="s1">background: rgba(255, 55, 95, 0.1); color: var(--accent-pink); padding: 10px 15px; width: auto;</span>
-        <span class="s1">border: 1px solid var(--accent-pink); font-size: 1.1em; border-radius: 8px; cursor: pointer;</span>
-    <span class="s1">}</span>
-    <span class="s1">.delete-btn-modal:hover { background: var(--accent-pink); color: #fff; }</span>
-
-    <span class="s1">.daily-group {</span>
-        <span class="s1">border: 1px solid var(--border-color);</span>
-        <span class="s1">border-radius: 8px;</span>
-        <span class="s1">margin-bottom: 15px;</span>
-        <span class="s1">overflow: hidden;</span>
-        <span class="s1">background-color: #2c2c2e;</span>
-    <span class="s1">}</span>
-
-    <span class="s1">.daily-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }</span>
-
-    <span class="s1">.clickable-date {</span>
-        <span class="s1">color: var(--accent-purple); font-weight: bold; cursor: pointer;</span>
-        <span class="s1">user-select: none; font-size: 1.1em; transition: opacity 0.2s;</span>
-    <span class="s1">}</span>
-    <span class="s1">.clickable-date:hover { opacity: 0.8; text-decoration: underline; }</span>
-
-    <span class="s1">.daily-stats { display: flex; gap: 15px; font-size: 0.9em; font-weight: bold; }</span>
-    <span class="s1">.daily-table { background-color: var(--card-bg); margin-top: 0; }</span>
-    <span class="s1">.daily-table td { padding: 10px 15px; font-size: 0.9em; border-bottom: 1px solid var(--border-color); }</span>
-
-    <span class="s1">/* Modal Styles */</span>
-    <span class="s1">.modal-overlay {</span>
-        <span class="s1">display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;</span>
-        <span class="s1">background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;</span>
-    <span class="s1">}</span>
-    <span class="s1">.modal-box {</span>
-        <span class="s1">background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 450px;</span>
-        <span class="s1">border: 1px solid var(--border-color); max-height: 80vh; overflow-y: auto;</span>
-    <span class="s1">}</span>
-    <span class="s1">.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }</span>
-    <span class="s1">.modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; }</span>
-    <span class="s1">.modal-close:hover { color: var(--accent-pink); }</span>
-    <span class="s1">.edit-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }</span>
-    <span class="s1">.edit-row input { flex: 1; }</span>
-  <span class="s0">&lt;/style&gt;</span>
-<span class="s0">&lt;/head&gt;</span>
-<span class="s0">&lt;body&gt;</span>
-
-<span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;container&quot;</span><span class="s0">&gt;</span>
-  <span class="s0">&lt;h1 </span><span class="s2">style</span><span class="s3">=&quot;color: var(--accent-teal);&quot;</span><span class="s0">&gt;</span><span class="s1">Spendings Dashboard</span><span class="s0">&lt;/h1&gt;</span>
-
-  <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;dashboard&quot; </span><span class="s2">id</span><span class="s3">=&quot;dynamic-dashboard&quot;</span><span class="s0">&gt;</span>
-  <span class="s0">&lt;/div&gt;</span>
-
-  <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;card&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;h2&gt;</span><span class="s1">Log Transaction</span><span class="s0">&lt;/h2&gt;</span>
-    <span class="s0">&lt;form </span><span class="s2">id</span><span class="s3">=&quot;transaction-form&quot; </span><span class="s2">class</span><span class="s3">=&quot;form-grid&quot; </span><span class="s2">novalidate</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;form-group&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;label&gt;</span><span class="s1">Date</span><span class="s0">&lt;/label&gt;</span>
-        <span class="s0">&lt;input </span><span class="s2">type</span><span class="s3">=&quot;date&quot; </span><span class="s2">id</span><span class="s3">=&quot;date&quot; </span><span class="s2">required</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;form-group&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;label&gt;</span><span class="s1">Type</span><span class="s0">&lt;/label&gt;</span>
-        <span class="s0">&lt;select </span><span class="s2">id</span><span class="s3">=&quot;type&quot; </span><span class="s2">required</span><span class="s0">&gt;</span>
-          <span class="s0">&lt;option </span><span class="s2">value</span><span class="s3">=&quot;expense&quot;</span><span class="s0">&gt;</span><span class="s1">Expense (-)</span><span class="s0">&lt;/option&gt;</span>
-          <span class="s0">&lt;option </span><span class="s2">value</span><span class="s3">=&quot;income&quot;</span><span class="s0">&gt;</span><span class="s1">Income (+)</span><span class="s0">&lt;/option&gt;</span>
-        <span class="s0">&lt;/select&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;form-group&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;label&gt;</span>
-          <span class="s1">Account</span>
-          <span class="s0">&lt;span </span><span class="s2">class</span><span class="s3">=&quot;edit-hint&quot; </span><span class="s2">style</span><span class="s3">=&quot;cursor:pointer; float:right; font-size: 0.9em;&quot; </span><span class="s2">onclick</span><span class="s3">=&quot;openManageModal('account')&quot;</span><span class="s0">&gt;</span><span class="s1">✎ Edit</span><span class="s0">&lt;/span&gt;</span>
-        <span class="s0">&lt;/label&gt;</span>
-        <span class="s0">&lt;select </span><span class="s2">id</span><span class="s3">=&quot;account&quot; </span><span class="s2">required onchange</span><span class="s3">=&quot;handleDynamicDropdown(this, 'account')&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;/select&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;form-group&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;label&gt;</span>
-          <span class="s1">Category</span>
-          <span class="s0">&lt;span </span><span class="s2">class</span><span class="s3">=&quot;edit-hint&quot; </span><span class="s2">style</span><span class="s3">=&quot;cursor:pointer; float:right; font-size: 0.9em;&quot; </span><span class="s2">onclick</span><span class="s3">=&quot;openManageModal('category')&quot;</span><span class="s0">&gt;</span><span class="s1">✎ Edit</span><span class="s0">&lt;/span&gt;</span>
-        <span class="s0">&lt;/label&gt;</span>
-        <span class="s0">&lt;select </span><span class="s2">id</span><span class="s3">=&quot;category&quot; </span><span class="s2">required onchange</span><span class="s3">=&quot;handleDynamicDropdown(this, 'category')&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;/select&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;form-group&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;label&gt;</span><span class="s1">Amount</span><span class="s0">&lt;/label&gt;</span>
-        <span class="s0">&lt;input </span><span class="s2">type</span><span class="s3">=&quot;number&quot; </span><span class="s2">id</span><span class="s3">=&quot;amount&quot; </span><span class="s2">step</span><span class="s3">=&quot;10&quot; </span><span class="s2">placeholder</span><span class="s3">=&quot;e.g. 400&quot; </span><span class="s2">required</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;form-group full-width&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;label&gt;</span><span class="s1">Description</span><span class="s0">&lt;/label&gt;</span>
-        <span class="s0">&lt;input </span><span class="s2">type</span><span class="s3">=&quot;text&quot; </span><span class="s2">id</span><span class="s3">=&quot;description&quot; </span><span class="s2">placeholder</span><span class="s3">=&quot;e.g. uber gam3a, coffee + croissant&quot; </span><span class="s2">required</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;form-group full-width&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;button </span><span class="s2">type</span><span class="s3">=&quot;submit&quot;</span><span class="s0">&gt;</span><span class="s1">Add to Ledger</span><span class="s0">&lt;/button&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-    <span class="s0">&lt;/form&gt;</span>
-  <span class="s0">&lt;/div&gt;</span>
-
-  <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;card&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;h2&gt;</span><span class="s1">History </span><span class="s0">&lt;span </span><span class="s2">style</span><span class="s3">=&quot;font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;&quot;</span><span class="s0">&gt;</span><span class="s1">(Click date to expand and edit)</span><span class="s0">&lt;/span&gt;&lt;/h2&gt;</span>
-    <span class="s0">&lt;div </span><span class="s2">id</span><span class="s3">=&quot;history-container&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;/div&gt;</span>
-  <span class="s0">&lt;/div&gt;</span>
-
-  <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;card&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;h2&gt;</span><span class="s1">Master Ledger </span><span class="s0">&lt;span </span><span class="s2">style</span><span class="s3">=&quot;font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;&quot;</span><span class="s0">&gt;</span><span class="s1">(Double-click any item to edit)</span><span class="s0">&lt;/span&gt;&lt;/h2&gt;</span>
-    <span class="s0">&lt;div </span><span class="s2">style</span><span class="s3">=&quot;overflow-x: auto;&quot;</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;table&gt;</span>
-        <span class="s0">&lt;thead&gt;</span>
-        <span class="s0">&lt;tr&gt;</span>
-          <span class="s0">&lt;th&gt;</span><span class="s1">Date</span><span class="s0">&lt;/th&gt;</span>
-          <span class="s0">&lt;th&gt;</span><span class="s1">Desc</span><span class="s0">&lt;/th&gt;</span>
-          <span class="s0">&lt;th&gt;</span><span class="s1">Category</span><span class="s0">&lt;/th&gt;</span>
-          <span class="s0">&lt;th&gt;</span><span class="s1">Account</span><span class="s0">&lt;/th&gt;</span>
-          <span class="s0">&lt;th&gt;</span><span class="s1">Amount</span><span class="s0">&lt;/th&gt;</span>
-          <span class="s0">&lt;th&gt;</span><span class="s1">Action</span><span class="s0">&lt;/th&gt;</span>
-        <span class="s0">&lt;/tr&gt;</span>
-        <span class="s0">&lt;/thead&gt;</span>
-        <span class="s0">&lt;tbody </span><span class="s2">id</span><span class="s3">=&quot;history-body&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;/tbody&gt;</span>
-      <span class="s0">&lt;/table&gt;</span>
-    <span class="s0">&lt;/div&gt;</span>
-  <span class="s0">&lt;/div&gt;</span>
-<span class="s0">&lt;/div&gt;</span>
-
-<span class="s0">&lt;div </span><span class="s2">id</span><span class="s3">=&quot;manage-modal&quot; </span><span class="s2">class</span><span class="s3">=&quot;modal-overlay&quot;</span><span class="s0">&gt;</span>
-  <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;modal-box&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;modal-header&quot;</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;h2 </span><span class="s2">id</span><span class="s3">=&quot;modal-title&quot; </span><span class="s2">style</span><span class="s3">=&quot;margin:0;&quot;</span><span class="s0">&gt;</span><span class="s1">Manage</span><span class="s0">&lt;/h2&gt;</span>
-      <span class="s0">&lt;span </span><span class="s2">class</span><span class="s3">=&quot;modal-close&quot; </span><span class="s2">onclick</span><span class="s3">=&quot;closeModal('manage-modal')&quot;</span><span class="s0">&gt;</span><span class="s1">✖</span><span class="s0">&lt;/span&gt;</span>
-    <span class="s0">&lt;/div&gt;</span>
-    <span class="s0">&lt;div </span><span class="s2">id</span><span class="s3">=&quot;modal-list&quot;</span><span class="s0">&gt;&lt;/div&gt;</span>
-  <span class="s0">&lt;/div&gt;</span>
-<span class="s0">&lt;/div&gt;</span>
-
-<span class="s0">&lt;div </span><span class="s2">id</span><span class="s3">=&quot;total-modal&quot; </span><span class="s2">class</span><span class="s3">=&quot;modal-overlay&quot;</span><span class="s0">&gt;</span>
-  <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;modal-box&quot;</span><span class="s0">&gt;</span>
-    <span class="s0">&lt;div </span><span class="s2">class</span><span class="s3">=&quot;modal-header&quot;</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;h2 </span><span class="s2">style</span><span class="s3">=&quot;margin:0;&quot;</span><span class="s0">&gt;</span><span class="s1">Adjust Total Balance</span><span class="s0">&lt;/h2&gt;</span>
-      <span class="s0">&lt;span </span><span class="s2">class</span><span class="s3">=&quot;modal-close&quot; </span><span class="s2">onclick</span><span class="s3">=&quot;closeModal('total-modal')&quot;</span><span class="s0">&gt;</span><span class="s1">✖</span><span class="s0">&lt;/span&gt;</span>
-    <span class="s0">&lt;/div&gt;</span>
-
-    <span class="s0">&lt;div </span><span class="s2">id</span><span class="s3">=&quot;total-step-1&quot;</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;p&gt;</span><span class="s1">Enter your new actual Total Balance:</span><span class="s0">&lt;/p&gt;</span>
-      <span class="s0">&lt;input </span><span class="s2">type</span><span class="s3">=&quot;number&quot; </span><span class="s2">id</span><span class="s3">=&quot;new-total-input&quot; </span><span class="s2">step</span><span class="s3">=&quot;10&quot; </span><span class="s2">style</span><span class="s3">=&quot;width:100%; margin-bottom: 15px; padding: 15px; font-size: 1.2em;&quot;</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;button </span><span class="s2">type</span><span class="s3">=&quot;button&quot; </span><span class="s2">style</span><span class="s3">=&quot;width:100%;&quot; </span><span class="s2">onclick</span><span class="s3">=&quot;goToDistribution()&quot;</span><span class="s0">&gt;</span><span class="s1">Next Step</span><span class="s0">&lt;/button&gt;</span>
-    <span class="s0">&lt;/div&gt;</span>
-
-    <span class="s0">&lt;div </span><span class="s2">id</span><span class="s3">=&quot;total-step-2&quot; </span><span class="s2">style</span><span class="s3">=&quot;display:none;&quot;</span><span class="s0">&gt;</span>
-      <span class="s0">&lt;p&gt;</span><span class="s1">Distribute EGP </span><span class="s0">&lt;strong </span><span class="s2">id</span><span class="s3">=&quot;display-new-total&quot; </span><span class="s2">class</span><span class="s3">=&quot;text-teal&quot;</span><span class="s0">&gt;</span><span class="s1">0</span><span class="s0">&lt;/strong&gt; </span><span class="s1">among your accounts:</span><span class="s0">&lt;/p&gt;</span>
-      <span class="s0">&lt;div </span><span class="s2">id</span><span class="s3">=&quot;distribution-inputs&quot;</span><span class="s0">&gt;&lt;/div&gt;</span>
-
-      <span class="s0">&lt;div </span><span class="s2">style</span><span class="s3">=&quot;background: #2c2c2e; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;&quot;</span><span class="s0">&gt;</span>
-        <span class="s0">&lt;span </span><span class="s2">style</span><span class="s3">=&quot;color: var(--text-muted); font-size: 0.9em; text-transform: uppercase;&quot;</span><span class="s0">&gt;</span><span class="s1">Left to Assign</span><span class="s0">&lt;/span&gt;&lt;br&gt;</span>
-        <span class="s0">&lt;span </span><span class="s2">id</span><span class="s3">=&quot;left-to-assign&quot; </span><span class="s2">style</span><span class="s3">=&quot;font-size: 2em; font-weight: bold;&quot; </span><span class="s2">class</span><span class="s3">=&quot;text-pink&quot;</span><span class="s0">&gt;</span><span class="s1">0</span><span class="s0">&lt;/span&gt;</span>
-      <span class="s0">&lt;/div&gt;</span>
-
-      <span class="s0">&lt;button </span><span class="s2">type</span><span class="s3">=&quot;button&quot; </span><span class="s2">id</span><span class="s3">=&quot;save-distribution-btn&quot; </span><span class="s2">style</span><span class="s3">=&quot;width:100%; margin-top:15px;&quot; </span><span class="s2">onclick</span><span class="s3">=&quot;saveTotalDistribution()&quot; </span><span class="s2">disabled</span><span class="s0">&gt;</span><span class="s1">Save New Balances</span><span class="s0">&lt;/button&gt;</span>
-    <span class="s0">&lt;/div&gt;</span>
-  <span class="s0">&lt;/div&gt;</span>
-<span class="s0">&lt;/div&gt;</span>
-
-<span class="s0">&lt;script&gt;</span>
-  <span class="s1">let transactions = JSON.parse(localStorage.getItem('finance_transactions')) || [];</span>
-  <span class="s1">let accounts = JSON.parse(localStorage.getItem('finance_accounts')) || ['Cash', 'CIB'];</span>
-  <span class="s1">let categoriesList = JSON.parse(localStorage.getItem('finance_categories')) || [&quot;Transport&quot;, &quot;Food &amp; Drink&quot;, &quot;Charity&quot;, &quot;Shopping&quot;, &quot;Work/Salary&quot;, &quot;Adjustment&quot;, &quot;Other&quot;];</span>
-
-  <span class="s1">let openPanels = new Set();</span>
-  <span class="s1">let currentEditType = '';</span>
-  <span class="s1">let currentTargetTotal = 0;</span>
-  <span class="s1">let preDistribBalances = {};</span>
-
-  <span class="s1">if(!document.getElementById('date').value) document.getElementById('date').valueAsDate = new Date();</span>
-
-  <span class="s1">let lastSelectedAccount = accounts[0];</span>
-  <span class="s1">let lastSelectedCategory = categoriesList[0];</span>
-
-  <span class="s1">function saveData() {</span>
-      <span class="s1">localStorage.setItem('finance_transactions', JSON.stringify(transactions));</span>
-      <span class="s1">localStorage.setItem('finance_accounts', JSON.stringify(accounts));</span>
-      <span class="s1">localStorage.setItem('finance_categories', JSON.stringify(categoriesList));</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function togglePanel(dateStr) {</span>
-      <span class="s1">const panel = document.getElementById(`details-${dateStr}`);</span>
-      <span class="s1">const icon = document.getElementById(`icon-${dateStr}`);</span>
-      <span class="s1">if (panel.style.display === 'none') {</span>
-          <span class="s1">panel.style.display = 'block';</span>
-          <span class="s1">icon.innerText = '▼';</span>
-          <span class="s1">openPanels.add(dateStr);</span>
-      <span class="s1">} else {</span>
-          <span class="s1">panel.style.display = 'none';</span>
-          <span class="s1">icon.innerText = '►';</span>
-          <span class="s1">openPanels.delete(dateStr);</span>
-      <span class="s1">}</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function handleDynamicDropdown(selectElement, type) {</span>
-      <span class="s1">if (selectElement.value === '_ADD_NEW_') {</span>
-          <span class="s1">const newItem = prompt(`Enter new ${type} name:`);</span>
-          <span class="s1">if (newItem &amp;&amp; newItem.trim() !== '') {</span>
-              <span class="s1">const cleanItem = newItem.trim();</span>
-              <span class="s1">if (type === 'account' &amp;&amp; !accounts.includes(cleanItem)) {</span>
-                  <span class="s1">accounts.push(cleanItem);</span>
-                  <span class="s1">lastSelectedAccount = cleanItem;</span>
-              <span class="s1">} else if (type === 'category' &amp;&amp; !categoriesList.includes(cleanItem)) {</span>
-                  <span class="s1">categoriesList.push(cleanItem);</span>
-                  <span class="s1">lastSelectedCategory = cleanItem;</span>
-              <span class="s1">}</span>
-              <span class="s1">saveData();</span>
-              <span class="s1">updateUI();</span>
-          <span class="s1">} else {</span>
-              <span class="s1">updateUI();</span>
-          <span class="s1">}</span>
-      <span class="s1">} else {</span>
-          <span class="s1">if (type === 'account') lastSelectedAccount = selectElement.value;</span>
-          <span class="s1">if (type === 'category') lastSelectedCategory = selectElement.value;</span>
-      <span class="s1">}</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function openManageModal(type) {</span>
-      <span class="s1">currentEditType = type;</span>
-      <span class="s1">document.getElementById('manage-modal').style.display = 'flex';</span>
-      <span class="s1">document.getElementById('modal-title').innerText = type === 'account' ? 'Manage Banks &amp; Accounts' : 'Manage Categories';</span>
-      <span class="s1">renderModalList();</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function renderModalList() {</span>
-      <span class="s1">const listContainer = document.getElementById('modal-list');</span>
-      <span class="s1">let dataList = currentEditType === 'account' ? accounts : categoriesList;</span>
-
-      <span class="s1">listContainer.innerHTML = '';</span>
-      <span class="s1">dataList.forEach((item, index) =&gt; {</span>
-          <span class="s1">const isSystem = (currentEditType === 'category' &amp;&amp; item === 'Adjustment');</span>
-          <span class="s1">const disabledAttr = isSystem ? 'disabled' : '';</span>
-          <span class="s1">const colorAttr = isSystem ? 'color: var(--text-muted);' : '';</span>
-
-          <span class="s1">listContainer.innerHTML += `</span>
-              <span class="s1">&lt;div class=&quot;edit-row&quot;&gt;</span>
-                  <span class="s1">&lt;input type=&quot;text&quot; id=&quot;modal-input-${index}&quot; value=&quot;${item}&quot; ${disabledAttr} style=&quot;${colorAttr}&quot;&gt;</span>
-                  <span class="s1">&lt;button type=&quot;button&quot; class=&quot;btn-secondary&quot; onclick=&quot;saveListItem(${index})&quot; ${disabledAttr}&gt;Save&lt;/button&gt;</span>
-                  <span class="s1">&lt;button type=&quot;button&quot; class=&quot;delete-btn-modal&quot; onclick=&quot;deleteListItem(${index})&quot; title=&quot;Delete&quot; ${disabledAttr}&gt;✖&lt;/button&gt;</span>
-              <span class="s1">&lt;/div&gt;</span>
-          <span class="s1">`;</span>
-      <span class="s1">});</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function saveListItem(index) {</span>
-      <span class="s1">const newVal = document.getElementById(`modal-input-${index}`).value.trim();</span>
-      <span class="s1">if (!newVal) return;</span>
-
-      <span class="s1">let dataList = currentEditType === 'account' ? accounts : categoriesList;</span>
-      <span class="s1">const oldVal = dataList[index];</span>
-      <span class="s1">dataList[index] = newVal;</span>
-
-      <span class="s1">transactions.forEach(t =&gt; {</span>
-          <span class="s1">if (currentEditType === 'account' &amp;&amp; t.account === oldVal) t.account = newVal;</span>
-          <span class="s1">if (currentEditType === 'category' &amp;&amp; t.category === oldVal) t.category = newVal;</span>
-      <span class="s1">});</span>
-
-      <span class="s1">saveData();</span>
-      <span class="s1">updateUI();</span>
-
-      <span class="s1">if (currentEditType === 'account' &amp;&amp; lastSelectedAccount === oldVal) lastSelectedAccount = newVal;</span>
-      <span class="s1">if (currentEditType === 'category' &amp;&amp; lastSelectedCategory === oldVal) lastSelectedCategory = newVal;</span>
-      <span class="s1">renderModalList();</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function deleteListItem(index) {</span>
-      <span class="s1">if (confirm(&quot;Delete this? Past transactions will keep the name, but it will be removed from your options.&quot;)) {</span>
-          <span class="s1">let dataList = currentEditType === 'account' ? accounts : categoriesList;</span>
-          <span class="s1">dataList.splice(index, 1);</span>
-          <span class="s1">saveData();</span>
-          <span class="s1">updateUI();</span>
-          <span class="s1">renderModalList();</span>
-      <span class="s1">}</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function closeModal(modalId) {</span>
-      <span class="s1">document.getElementById(modalId).style.display = 'none';</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function openTotalDistributionModal() {</span>
-      <span class="s1">document.getElementById('total-modal').style.display = 'flex';</span>
-      <span class="s1">document.getElementById('total-step-1').style.display = 'block';</span>
-      <span class="s1">document.getElementById('total-step-2').style.display = 'none';</span>
-
-      <span class="s1">const totalInput = document.getElementById('new-total-input');</span>
-      <span class="s1">totalInput.value = '';</span>
-      <span class="s1">setTimeout(() =&gt; totalInput.focus(), 100);</span>
-
-      <span class="s1">// Get snapshot of current balances</span>
-      <span class="s1">preDistribBalances = {};</span>
-      <span class="s1">accounts.forEach(acc =&gt; preDistribBalances[acc] = 0);</span>
-      <span class="s1">transactions.forEach(t =&gt; {</span>
-          <span class="s1">if (accounts.includes(t.account)) {</span>
-              <span class="s1">if(t.type === 'income') preDistribBalances[t.account] += t.amount;</span>
-              <span class="s1">else preDistribBalances[t.account] -= t.amount;</span>
-          <span class="s1">}</span>
-      <span class="s1">});</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function goToDistribution() {</span>
-      <span class="s1">const val = parseFloat(document.getElementById('new-total-input').value);</span>
-      <span class="s1">if (isNaN(val)) return;</span>
-
-      <span class="s1">currentTargetTotal = val;</span>
-      <span class="s1">document.getElementById('total-step-1').style.display = 'none';</span>
-      <span class="s1">document.getElementById('total-step-2').style.display = 'block';</span>
-      <span class="s1">document.getElementById('display-new-total').innerText = val.toLocaleString();</span>
-
-      <span class="s1">const container = document.getElementById('distribution-inputs');</span>
-      <span class="s1">container.innerHTML = '';</span>
-
-      <span class="s1">accounts.forEach(acc =&gt; {</span>
-          <span class="s1">// UPDATED: Changed step=&quot;0.01&quot; to step=&quot;10&quot; for the distribution inputs</span>
-          <span class="s1">container.innerHTML += `</span>
-              <span class="s1">&lt;div class=&quot;form-group&quot; style=&quot;margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between;&quot;&gt;</span>
-                  <span class="s1">&lt;label style=&quot;flex: 1; font-size: 1.1em; font-weight: bold;&quot;&gt;${acc}&lt;/label&gt;</span>
-                  <span class="s1">&lt;input type=&quot;number&quot; step=&quot;10&quot; class=&quot;distrib-input&quot; data-account=&quot;${acc}&quot; value=&quot;${preDistribBalances[acc]}&quot; oninput=&quot;updateRemaining()&quot; style=&quot;flex: 2; text-align: right; font-size: 1.1em;&quot;&gt;</span>
-              <span class="s1">&lt;/div&gt;</span>
-          <span class="s1">`;</span>
-      <span class="s1">});</span>
-
-      <span class="s1">updateRemaining();</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function updateRemaining() {</span>
-      <span class="s1">const inputs = document.querySelectorAll('.distrib-input');</span>
-      <span class="s1">let currentSum = 0;</span>
-      <span class="s1">inputs.forEach(input =&gt; currentSum += (parseFloat(input.value) || 0));</span>
-
-      <span class="s1">const remaining = currentTargetTotal - currentSum;</span>
-      <span class="s1">const remainingEl = document.getElementById('left-to-assign');</span>
-
-      <span class="s1">if (Math.abs(remaining) &lt; 0.01) {</span>
-          <span class="s1">remainingEl.innerText = &quot;0&quot;;</span>
-          <span class="s1">remainingEl.className = 'text-teal';</span>
-          <span class="s1">document.getElementById('save-distribution-btn').disabled = false;</span>
-      <span class="s1">} else {</span>
-          <span class="s1">remainingEl.innerText = remaining &gt; 0 ? &quot;+&quot; + remaining.toLocaleString() : remaining.toLocaleString();</span>
-          <span class="s1">remainingEl.className = 'text-pink';</span>
-          <span class="s1">document.getElementById('save-distribution-btn').disabled = true;</span>
-      <span class="s1">}</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function saveTotalDistribution() {</span>
-      <span class="s1">const inputs = document.querySelectorAll('.distrib-input');</span>
-      <span class="s1">const today = new Date().toISOString().split('T')[0];</span>
-
-      <span class="s1">inputs.forEach(input =&gt; {</span>
-          <span class="s1">const acc = input.getAttribute('data-account');</span>
-          <span class="s1">const newVal = parseFloat(input.value) || 0;</span>
-          <span class="s1">const diff = newVal - preDistribBalances[acc];</span>
-
-          <span class="s1">if (Math.abs(diff) &gt; 0.01) {</span>
-              <span class="s1">transactions.push({</span>
-                  <span class="s1">id: Date.now() + Math.floor(Math.random() * 1000),</span>
-                  <span class="s1">date: today,</span>
-                  <span class="s1">type: diff &gt; 0 ? 'income' : 'expense',</span>
-                  <span class="s1">amount: Math.abs(diff),</span>
-                  <span class="s1">account: acc,</span>
-                  <span class="s1">category: 'Adjustment',</span>
-                  <span class="s1">description: 'Total Balance Re-distribution'</span>
-              <span class="s1">});</span>
-          <span class="s1">}</span>
-      <span class="s1">});</span>
-
-      <span class="s1">saveData();</span>
-      <span class="s1">updateUI();</span>
-      <span class="s1">closeModal('total-modal');</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function adjustBalance(accountName, currentBalance) {</span>
-      <span class="s1">const input = prompt(`Current ${accountName} balance is EGP ${currentBalance}.\nEnter your ACTUAL current balance to adjust:`, currentBalance);</span>
-
-      <span class="s1">if (input !== null &amp;&amp; input !== &quot;&quot;) {</span>
-          <span class="s1">const newBalance = parseFloat(input);</span>
-          <span class="s1">if (!isNaN(newBalance) &amp;&amp; newBalance !== currentBalance) {</span>
-              <span class="s1">const difference = newBalance - currentBalance;</span>
-              <span class="s1">transactions.push({</span>
-                  <span class="s1">id: Date.now(),</span>
-                  <span class="s1">date: new Date().toISOString().split('T')[0],</span>
-                  <span class="s1">type: difference &gt; 0 ? 'income' : 'expense',</span>
-                  <span class="s1">amount: Math.abs(difference),</span>
-                  <span class="s1">account: accountName,</span>
-                  <span class="s1">category: 'Adjustment',</span>
-                  <span class="s1">description: 'Manual Balance Correction'</span>
-              <span class="s1">});</span>
-              <span class="s1">saveData();</span>
-              <span class="s1">updateUI();</span>
-          <span class="s1">}</span>
-      <span class="s1">}</span>
-  <span class="s1">}</span>
-
-  <span class="s1">document.getElementById('transaction-form').addEventListener('submit', function(e) {</span>
-      <span class="s1">e.preventDefault();</span>
-
-      <span class="s1">const dateVal = document.getElementById('date').value;</span>
-      <span class="s1">const amountVal = parseFloat(document.getElementById('amount').value);</span>
-      <span class="s1">const descVal = document.getElementById('description').value;</span>
-
-      <span class="s1">if(!dateVal || isNaN(amountVal) || !descVal) {</span>
-          <span class="s1">alert(&quot;Please fill out the form properly.&quot;);</span>
-          <span class="s1">return;</span>
-      <span class="s1">}</span>
-
-      <span class="s1">transactions.push({</span>
-          <span class="s1">id: Date.now(),</span>
-          <span class="s1">date: dateVal,</span>
-          <span class="s1">type: document.getElementById('type').value,</span>
-          <span class="s1">amount: amountVal,</span>
-          <span class="s1">account: document.getElementById('account').value,</span>
-          <span class="s1">category: document.getElementById('category').value,</span>
-          <span class="s1">description: descVal</span>
-      <span class="s1">});</span>
-
-      <span class="s1">saveData();</span>
-      <span class="s1">updateUI();</span>
-
-      <span class="s1">document.getElementById('amount').value = '';</span>
-      <span class="s1">document.getElementById('description').value = '';</span>
-      <span class="s1">document.getElementById('amount').focus();</span>
-  <span class="s1">});</span>
-
-  <span class="s1">function deleteTransaction(id) {</span>
-      <span class="s1">transactions = transactions.filter(t =&gt; t.id !== id);</span>
-      <span class="s1">saveData();</span>
-      <span class="s1">updateUI();</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function makeEditable(element, id, field, type) {</span>
-      <span class="s1">if (element.querySelector('.inline-edit-input')) return;</span>
-
-      <span class="s1">const currentVal = transactions.find(t =&gt; t.id === id)[field];</span>
-      <span class="s1">let inputHTML = '';</span>
-
-      <span class="s1">if (type === 'select-account') {</span>
-          <span class="s1">const options = accounts.map(a =&gt; `&lt;option value=&quot;${a}&quot; ${a === currentVal ? 'selected' : ''}&gt;${a}&lt;/option&gt;`).join('');</span>
-          <span class="s1">inputHTML = `&lt;select class=&quot;inline-edit-input&quot;&gt;${options}&lt;/select&gt;`;</span>
-      <span class="s1">} else if (type === 'select-category') {</span>
-          <span class="s1">const options = categoriesList.map(c =&gt; `&lt;option value=&quot;${c}&quot; ${c === currentVal ? 'selected' : ''}&gt;${c}&lt;/option&gt;`).join('');</span>
-          <span class="s1">inputHTML = `&lt;select class=&quot;inline-edit-input&quot;&gt;${options}&lt;/select&gt;`;</span>
-      <span class="s1">} else if (type === 'number') {</span>
-          <span class="s1">inputHTML = `&lt;input type=&quot;number&quot; step=&quot;10&quot; class=&quot;inline-edit-input&quot; value=&quot;${currentVal}&quot;&gt;`;</span>
-      <span class="s1">} else if (type === 'date') {</span>
-          <span class="s1">inputHTML = `&lt;input type=&quot;date&quot; class=&quot;inline-edit-input&quot; value=&quot;${currentVal}&quot;&gt;`;</span>
-      <span class="s1">} else {</span>
-          <span class="s1">inputHTML = `&lt;input type=&quot;text&quot; class=&quot;inline-edit-input&quot; value=&quot;${currentVal}&quot;&gt;`;</span>
-      <span class="s1">}</span>
-
-      <span class="s1">element.innerHTML = inputHTML;</span>
-
-      <span class="s1">const inputEl = element.querySelector('.inline-edit-input');</span>
-      <span class="s1">inputEl.focus();</span>
-
-      <span class="s1">const saveEdit = () =&gt; {</span>
-          <span class="s1">const newVal = type === 'number' ? parseFloat(inputEl.value) : inputEl.value;</span>
-          <span class="s1">if (newVal || newVal === 0) {</span>
-              <span class="s1">const tIndex = transactions.findIndex(t =&gt; t.id === id);</span>
-              <span class="s1">transactions[tIndex][field] = newVal;</span>
-              <span class="s1">saveData();</span>
-          <span class="s1">}</span>
-          <span class="s1">updateUI();</span>
-      <span class="s1">};</span>
-
-      <span class="s1">inputEl.addEventListener('blur', saveEdit);</span>
-      <span class="s1">inputEl.addEventListener('keypress', function(e) { if (e.key === 'Enter') saveEdit(); });</span>
-  <span class="s1">}</span>
-
-  <span class="s1">function updateUI() {</span>
-      <span class="s1">const accSelect = document.getElementById('account');</span>
-      <span class="s1">accSelect.innerHTML = accounts.map(acc =&gt; `&lt;option value=&quot;${acc}&quot;&gt;${acc}&lt;/option&gt;`).join('') + `&lt;option value=&quot;_ADD_NEW_&quot; style=&quot;color:var(--accent-teal); font-weight:bold;&quot;&gt;+ Add New Bank...&lt;/option&gt;`;</span>
-      <span class="s1">accSelect.value = accounts.includes(lastSelectedAccount) ? lastSelectedAccount : accounts[0];</span>
-
-      <span class="s1">const catSelect = document.getElementById('category');</span>
-      <span class="s1">catSelect.innerHTML = categoriesList.map(cat =&gt; `&lt;option value=&quot;${cat}&quot;&gt;${cat}&lt;/option&gt;`).join('') + `&lt;option value=&quot;_ADD_NEW_&quot; style=&quot;color:var(--accent-teal); font-weight:bold;&quot;&gt;+ Add New Category...&lt;/option&gt;`;</span>
-      <span class="s1">catSelect.value = categoriesList.includes(lastSelectedCategory) ? lastSelectedCategory : categoriesList[0];</span>
-
-      <span class="s1">let totalBal = 0;</span>
-      <span class="s1">let accountBalances = {};</span>
-      <span class="s1">accounts.forEach(acc =&gt; accountBalances[acc] = 0);</span>
-
-      <span class="s1">const chronoTransactions = [...transactions].sort((a, b) =&gt; new Date(a.date) - new Date(b.date) || a.id - b.id);</span>
-
-      <span class="s1">let dailyData = {};</span>
-      <span class="s1">let runningTotal = 0;</span>
-
-      <span class="s1">chronoTransactions.forEach(t =&gt; {</span>
-          <span class="s1">if (!accountBalances[t.account]) accountBalances[t.account] = 0;</span>
-          <span class="s1">if (!dailyData[t.date]) dailyData[t.date] = { spent: 0, earned: 0, transactions: [], endOfDayBal: 0 };</span>
-
-          <span class="s1">if (t.type === 'income') {</span>
-              <span class="s1">totalBal += t.amount;</span>
-              <span class="s1">accountBalances[t.account] += t.amount;</span>
-              <span class="s1">runningTotal += t.amount;</span>
-              <span class="s1">dailyData[t.date].earned += t.amount;</span>
-          <span class="s1">} else {</span>
-              <span class="s1">totalBal -= t.amount;</span>
-              <span class="s1">accountBalances[t.account] -= t.amount;</span>
-              <span class="s1">runningTotal -= t.amount;</span>
-              <span class="s1">if(t.category !== 'Adjustment') dailyData[t.date].spent += t.amount;</span>
-          <span class="s1">}</span>
-
-          <span class="s1">dailyData[t.date].endOfDayBal = runningTotal;</span>
-          <span class="s1">dailyData[t.date].transactions.push(t);</span>
-      <span class="s1">});</span>
-
-      <span class="s1">const dashboard = document.getElementById('dynamic-dashboard');</span>
-      <span class="s1">dashboard.innerHTML = `</span>
-          <span class="s1">&lt;div class=&quot;card&quot;&gt;</span>
-              <span class="s1">&lt;span class=&quot;stat-title&quot;&gt;Total Balance&lt;/span&gt;</span>
-              <span class="s1">&lt;div class=&quot;stat-value text-teal&quot; onclick=&quot;openTotalDistributionModal()&quot;&gt;</span>
-                  <span class="s1">EGP ${totalBal.toLocaleString()} &lt;span class=&quot;edit-hint&quot;&gt;✎ Edit&lt;/span&gt;</span>
-              <span class="s1">&lt;/div&gt;</span>
-          <span class="s1">&lt;/div&gt;</span>
-      <span class="s1">`;</span>
-
-      <span class="s1">accounts.forEach(acc =&gt; {</span>
-          <span class="s1">dashboard.innerHTML += `</span>
-              <span class="s1">&lt;div class=&quot;card&quot;&gt;</span>
-                  <span class="s1">&lt;span class=&quot;stat-title&quot;&gt;${acc} Balance&lt;/span&gt;</span>
-                  <span class="s1">&lt;div class=&quot;stat-value&quot; onclick=&quot;adjustBalance('${acc}', ${accountBalances[acc]})&quot;&gt;</span>
-                      <span class="s1">EGP ${accountBalances[acc].toLocaleString()} &lt;span class=&quot;edit-hint&quot;&gt;✎ Edit&lt;/span&gt;</span>
-                  <span class="s1">&lt;/div&gt;</span>
-              <span class="s1">&lt;/div&gt;</span>
-          <span class="s1">`;</span>
-      <span class="s1">});</span>
-
-      <span class="s1">const historyContainer = document.getElementById('history-container');</span>
-      <span class="s1">historyContainer.innerHTML = '';</span>
-      <span class="s1">const sortedDates = Object.keys(dailyData).sort((a, b) =&gt; new Date(b) - new Date(a));</span>
-
-      <span class="s1">sortedDates.forEach(date =&gt; {</span>
-          <span class="s1">const data = dailyData[date];</span>
-          <span class="s1">const displayDate = date.split('-').reverse().join('/');</span>
-
-          <span class="s1">const isPanelOpen = openPanels.has(date);</span>
-          <span class="s1">const displayStyle = isPanelOpen ? 'block' : 'none';</span>
-          <span class="s1">const iconStr = isPanelOpen ? '▼' : '►';</span>
-
-          <span class="s1">let html = `</span>
-          <span class="s1">&lt;div class=&quot;daily-group&quot;&gt;</span>
-              <span class="s1">&lt;div class=&quot;daily-header&quot;&gt;</span>
-                  <span class="s1">&lt;span class=&quot;clickable-date&quot; onclick=&quot;togglePanel('${date}')&quot;&gt;</span>
-                      <span class="s1">&lt;span id=&quot;icon-${date}&quot;&gt;${iconStr}&lt;/span&gt; ${displayDate}</span>
-                  <span class="s1">&lt;/span&gt;</span>
-                  <span class="s1">&lt;div class=&quot;daily-stats&quot;&gt;</span>
-                      <span class="s1">&lt;span class=&quot;text-pink&quot;&gt;Spent: EGP ${data.spent.toLocaleString()}&lt;/span&gt;</span>
-                      <span class="s1">&lt;span class=&quot;text-teal&quot;&gt;In: EGP ${data.earned.toLocaleString()}&lt;/span&gt;</span>
-                      <span class="s1">&lt;span style=&quot;color:var(--text-muted)&quot;&gt;| Total Bal: EGP ${data.endOfDayBal.toLocaleString()}&lt;/span&gt;</span>
-                  <span class="s1">&lt;/div&gt;</span>
-              <span class="s1">&lt;/div&gt;</span>
-              <span class="s1">&lt;div id=&quot;details-${date}&quot; style=&quot;display: ${displayStyle};&quot;&gt;</span>
-                  <span class="s1">&lt;table class=&quot;daily-table&quot;&gt;&lt;tbody&gt;`;</span>
-
-          <span class="s1">data.transactions.sort((a, b) =&gt; b.id - a.id).forEach(t =&gt; {</span>
-              <span class="s1">const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';</span>
-              <span class="s1">const typeSymbol = t.type === 'income' ? '+' : '-';</span>
-
-              <span class="s1">html += `</span>
-                  <span class="s1">&lt;tr&gt;</span>
-                      <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'description', 'text')&quot; width=&quot;40%&quot;&gt;${t.description}&lt;/td&gt;</span>
-                      <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'category', 'select-category')&quot; width=&quot;20%&quot; style=&quot;color: var(--accent-orange); font-size: 0.85em;&quot;&gt;${t.category}&lt;/td&gt;</span>
-                      <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'account', 'select-account')&quot; width=&quot;20%&quot; style=&quot;font-weight:bold;&quot;&gt;${t.account}&lt;/td&gt;</span>
-                      <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'amount', 'number')&quot; width=&quot;15%&quot;&gt;&lt;span class=&quot;type-badge ${typeClass}&quot;&gt;${typeSymbol}${t.amount}&lt;/span&gt;&lt;/td&gt;</span>
-                      <span class="s1">&lt;td width=&quot;5%&quot;&gt;&lt;button class=&quot;delete-btn&quot; onclick=&quot;deleteTransaction(${t.id})&quot;&gt;X&lt;/button&gt;&lt;/td&gt;</span>
-                  <span class="s1">&lt;/tr&gt;`;</span>
-          <span class="s1">});</span>
-          <span class="s1">html += `&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&lt;/div&gt;`;</span>
-          <span class="s1">historyContainer.innerHTML += html;</span>
-      <span class="s1">});</span>
-
-      <span class="s1">if(sortedDates.length === 0) {</span>
-          <span class="s1">historyContainer.innerHTML = `&lt;p style=&quot;color: var(--text-muted); text-align: center; padding: 20px;&quot;&gt;No transactions logged yet.&lt;/p&gt;`;</span>
-      <span class="s1">}</span>
-
-      <span class="s1">const historyBody = document.getElementById('history-body');</span>
-      <span class="s1">historyBody.innerHTML = '';</span>
-      <span class="s1">const sortedTransactions = [...transactions].sort((a, b) =&gt; b.id - a.id);</span>
-
-      <span class="s1">sortedTransactions.forEach(t =&gt; {</span>
-          <span class="s1">const row = document.createElement('tr');</span>
-          <span class="s1">const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';</span>
-          <span class="s1">const typeSymbol = t.type === 'income' ? '+' : '-';</span>
-          <span class="s1">const displayDate = t.date ? t.date.split('-').reverse().join('/') : 'N/A';</span>
-
-          <span class="s1">row.innerHTML = `</span>
-              <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'date', 'date')&quot; style=&quot;color: var(--text-muted); font-size: 0.9em;&quot;&gt;${displayDate}&lt;/td&gt;</span>
-              <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'description', 'text')&quot;&gt;${t.description}&lt;/td&gt;</span>
-              <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'category', 'select-category')&quot;&gt;&lt;span style=&quot;font-size: 0.85em; color: var(--accent-orange);&quot;&gt;${t.category}&lt;/span&gt;&lt;/td&gt;</span>
-              <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'account', 'select-account')&quot;&gt;&lt;span style=&quot;font-weight: bold;&quot;&gt;${t.account}&lt;/span&gt;&lt;/td&gt;</span>
-              <span class="s1">&lt;td class=&quot;editable&quot; ondblclick=&quot;makeEditable(this, ${t.id}, 'amount', 'number')&quot;&gt;&lt;span class=&quot;type-badge ${typeClass}&quot;&gt;${typeSymbol}${t.amount}&lt;/span&gt;&lt;/td&gt;</span>
-              <span class="s1">&lt;td&gt;&lt;button class=&quot;delete-btn&quot; onclick=&quot;deleteTransaction(${t.id})&quot;&gt;X&lt;/button&gt;&lt;/td&gt;</span>
-          <span class="s1">`;</span>
-          <span class="s1">historyBody.appendChild(row);</span>
-      <span class="s1">});</span>
-  <span class="s1">}</span>
-
-  <span class="s1">updateUI();</span>
-<span class="s0">&lt;/script&gt;</span>
-<span class="s0">&lt;/body&gt;</span>
-<span class="s0">&lt;/html&gt;</span></pre>
+<body>
+
+<div class="container">
+    <h1 style="color: var(--accent-teal);">Spendings Dashboard</h1>
+
+    <div class="dashboard" id="dynamic-dashboard">
+        </div>
+
+    <div class="card">
+        <h2>Log Transaction</h2>
+        <form id="transaction-form" class="form-grid" novalidate>
+            <div class="form-group">
+                <label>Date</label>
+                <input type="date" id="date" required>
+            </div>
+            <div class="form-group">
+                <label>Type</label>
+                <select id="type" required>
+                    <option value="expense">Expense (-)</option>
+                    <option value="income">Income (+)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>
+                    Account 
+                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em;" onclick="openManageModal('account')">✎ Edit</span>
+                </label>
+                <select id="account" required onchange="handleDynamicDropdown(this, 'account')">
+                    </select>
+            </div>
+            <div class="form-group">
+                <label>
+                    Category 
+                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em;" onclick="openManageModal('category')">✎ Edit</span>
+                </label>
+                <select id="category" required onchange="handleDynamicDropdown(this, 'category')">
+                    </select>
+            </div>
+            <div class="form-group">
+                <label>Amount</label>
+                <input type="number" id="amount" step="10" placeholder="e.g. 400" required>
+            </div>
+            <div class="form-group full-width">
+                <label>Description</label>
+                <input type="text" id="description" placeholder="e.g. uber gam3a, coffee + croissant" required>
+            </div>
+            <div class="form-group full-width">
+                <button type="submit">Add to Ledger</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>History <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Click date to expand and edit)</span></h2>
+        <div id="history-container">
+            </div>
+    </div>
+
+    <div class="card">
+        <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Double-click any item to edit)</span></h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Desc</th>
+                        <th>Category</th>
+                        <th>Account</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="manage-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 id="modal-title" style="margin:0;">Manage</h2>
+            <span class="modal-close" onclick="closeModal('manage-modal')">✖</span>
+        </div>
+        <div id="modal-list"></div>
+    </div>
+</div>
+
+<div id="total-modal" class="modal-overlay">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h2 style="margin:0;">Adjust Total Balance</h2>
+            <span class="modal-close" onclick="closeModal('total-modal')">✖</span>
+        </div>
+        
+        <div id="total-step-1">
+            <p>Enter your new actual Total Balance:</p>
+            <input type="number" id="new-total-input" step="10" style="width:100%; margin-bottom: 15px; padding: 15px; font-size: 1.2em;">
+            <button type="button" style="width:100%;" onclick="goToDistribution()">Next Step</button>
+        </div>
+
+        <div id="total-step-2" style="display:none;">
+            <p>Distribute EGP <strong id="display-new-total" class="text-teal">0</strong> among your accounts:</p>
+            <div id="distribution-inputs"></div>
+            
+            <div style="background: #2c2c2e; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;">
+                <span style="color: var(--text-muted); font-size: 0.9em; text-transform: uppercase;">Left to Assign</span><br>
+                <span id="left-to-assign" style="font-size: 2em; font-weight: bold;" class="text-pink">0</span>
+            </div>
+            
+            <button type="button" id="save-distribution-btn" style="width:100%; margin-top:15px;" onclick="saveTotalDistribution()" disabled>Save New Balances</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let transactions = JSON.parse(localStorage.getItem('finance_transactions')) || [];
+    let accounts = JSON.parse(localStorage.getItem('finance_accounts')) || ['Cash', 'CIB'];
+    let categoriesList = JSON.parse(localStorage.getItem('finance_categories')) || ["Transport", "Food & Drink", "Charity", "Shopping", "Work/Salary", "Adjustment", "Other"];
+    
+    let openPanels = new Set(); 
+    let currentEditType = ''; 
+    let currentTargetTotal = 0;
+    let preDistribBalances = {};
+
+    if(!document.getElementById('date').value) document.getElementById('date').valueAsDate = new Date();
+
+    let lastSelectedAccount = accounts[0];
+    let lastSelectedCategory = categoriesList[0];
+
+    function saveData() {
+        localStorage.setItem('finance_transactions', JSON.stringify(transactions));
+        localStorage.setItem('finance_accounts', JSON.stringify(accounts));
+        localStorage.setItem('finance_categories', JSON.stringify(categoriesList));
+    }
+
+    function togglePanel(dateStr) {
+        const panel = document.getElementById(`details-${dateStr}`);
+        const icon = document.getElementById(`icon-${dateStr}`);
+        if (panel.style.display === 'none') {
+            panel.style.display = 'block';
+            icon.innerText = '▼';
+            openPanels.add(dateStr);
+        } else {
+            panel.style.display = 'none';
+            icon.innerText = '►';
+            openPanels.delete(dateStr);
+        }
+    }
+
+    function handleDynamicDropdown(selectElement, type) {
+        if (selectElement.value === '_ADD_NEW_') {
+            const newItem = prompt(`Enter new ${type} name:`);
+            if (newItem && newItem.trim() !== '') {
+                const cleanItem = newItem.trim();
+                if (type === 'account' && !accounts.includes(cleanItem)) {
+                    accounts.push(cleanItem);
+                    lastSelectedAccount = cleanItem;
+                } else if (type === 'category' && !categoriesList.includes(cleanItem)) {
+                    categoriesList.push(cleanItem);
+                    lastSelectedCategory = cleanItem;
+                }
+                saveData();
+                updateUI();
+            } else {
+                updateUI();
+            }
+        } else {
+            if (type === 'account') lastSelectedAccount = selectElement.value;
+            if (type === 'category') lastSelectedCategory = selectElement.value;
+        }
+    }
+
+    function openManageModal(type) {
+        currentEditType = type;
+        document.getElementById('manage-modal').style.display = 'flex';
+        document.getElementById('modal-title').innerText = type === 'account' ? 'Manage Banks & Accounts' : 'Manage Categories';
+        renderModalList();
+    }
+
+    function renderModalList() {
+        const listContainer = document.getElementById('modal-list');
+        let dataList = currentEditType === 'account' ? accounts : categoriesList;
+        
+        listContainer.innerHTML = '';
+        dataList.forEach((item, index) => {
+            const isSystem = (currentEditType === 'category' && item === 'Adjustment');
+            const disabledAttr = isSystem ? 'disabled' : '';
+            const colorAttr = isSystem ? 'color: var(--text-muted);' : '';
+            
+            listContainer.innerHTML += `
+                <div class="edit-row">
+                    <input type="text" id="modal-input-${index}" value="${item}" ${disabledAttr} style="${colorAttr}">
+                    <button type="button" class="btn-secondary" onclick="saveListItem(${index})" ${disabledAttr}>Save</button>
+                    <button type="button" class="delete-btn-modal" onclick="deleteListItem(${index})" title="Delete" ${disabledAttr}>✖</button>
+                </div>
+            `;
+        });
+    }
+
+    function saveListItem(index) {
+        const newVal = document.getElementById(`modal-input-${index}`).value.trim();
+        if (!newVal) return;
+
+        let dataList = currentEditType === 'account' ? accounts : categoriesList;
+        const oldVal = dataList[index];
+        dataList[index] = newVal;
+
+        transactions.forEach(t => {
+            if (currentEditType === 'account' && t.account === oldVal) t.account = newVal;
+            if (currentEditType === 'category' && t.category === oldVal) t.category = newVal;
+        });
+
+        saveData();
+        updateUI();
+        
+        if (currentEditType === 'account' && lastSelectedAccount === oldVal) lastSelectedAccount = newVal;
+        if (currentEditType === 'category' && lastSelectedCategory === oldVal) lastSelectedCategory = newVal;
+        renderModalList();
+    }
+
+    function deleteListItem(index) {
+        if (confirm("Delete this? Past transactions will keep the name, but it will be removed from your options.")) {
+            let dataList = currentEditType === 'account' ? accounts : categoriesList;
+            dataList.splice(index, 1);
+            saveData();
+            updateUI();
+            renderModalList();
+        }
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    function openTotalDistributionModal() {
+        document.getElementById('total-modal').style.display = 'flex';
+        document.getElementById('total-step-1').style.display = 'block';
+        document.getElementById('total-step-2').style.display = 'none';
+        
+        const totalInput = document.getElementById('new-total-input');
+        totalInput.value = '';
+        setTimeout(() => totalInput.focus(), 100);
+
+        // Get snapshot of current balances
+        preDistribBalances = {};
+        accounts.forEach(acc => preDistribBalances[acc] = 0);
+        transactions.forEach(t => {
+            if (accounts.includes(t.account)) {
+                if(t.type === 'income') preDistribBalances[t.account] += t.amount;
+                else preDistribBalances[t.account] -= t.amount;
+            }
+        });
+    }
+
+    function goToDistribution() {
+        const val = parseFloat(document.getElementById('new-total-input').value);
+        if (isNaN(val)) return;
+        
+        currentTargetTotal = val;
+        document.getElementById('total-step-1').style.display = 'none';
+        document.getElementById('total-step-2').style.display = 'block';
+        document.getElementById('display-new-total').innerText = val.toLocaleString();
+        
+        const container = document.getElementById('distribution-inputs');
+        container.innerHTML = '';
+        
+        accounts.forEach(acc => {
+            // UPDATED: Changed step="0.01" to step="10" for the distribution inputs
+            container.innerHTML += `
+                <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+                    <label style="flex: 1; font-size: 1.1em; font-weight: bold;">${acc}</label>
+                    <input type="number" step="10" class="distrib-input" data-account="${acc}" value="${preDistribBalances[acc]}" oninput="updateRemaining()" style="flex: 2; text-align: right; font-size: 1.1em;">
+                </div>
+            `;
+        });
+        
+        updateRemaining();
+    }
+
+    function updateRemaining() {
+        const inputs = document.querySelectorAll('.distrib-input');
+        let currentSum = 0;
+        inputs.forEach(input => currentSum += (parseFloat(input.value) || 0));
+        
+        const remaining = currentTargetTotal - currentSum;
+        const remainingEl = document.getElementById('left-to-assign');
+        
+        if (Math.abs(remaining) < 0.01) {
+            remainingEl.innerText = "0";
+            remainingEl.className = 'text-teal';
+            document.getElementById('save-distribution-btn').disabled = false;
+        } else {
+            remainingEl.innerText = remaining > 0 ? "+" + remaining.toLocaleString() : remaining.toLocaleString();
+            remainingEl.className = 'text-pink';
+            document.getElementById('save-distribution-btn').disabled = true;
+        }
+    }
+
+    function saveTotalDistribution() {
+        const inputs = document.querySelectorAll('.distrib-input');
+        const today = new Date().toISOString().split('T')[0];
+        
+        inputs.forEach(input => {
+            const acc = input.getAttribute('data-account');
+            const newVal = parseFloat(input.value) || 0;
+            const diff = newVal - preDistribBalances[acc];
+            
+            if (Math.abs(diff) > 0.01) {
+                transactions.push({
+                    id: Date.now() + Math.floor(Math.random() * 1000), 
+                    date: today,
+                    type: diff > 0 ? 'income' : 'expense',
+                    amount: Math.abs(diff),
+                    account: acc,
+                    category: 'Adjustment',
+                    description: 'Total Balance Re-distribution'
+                });
+            }
+        });
+        
+        saveData();
+        updateUI();
+        closeModal('total-modal');
+    }
+
+    function adjustBalance(accountName, currentBalance) {
+        const input = prompt(`Current ${accountName} balance is EGP ${currentBalance}.\nEnter your ACTUAL current balance to adjust:`, currentBalance);
+        
+        if (input !== null && input !== "") {
+            const newBalance = parseFloat(input);
+            if (!isNaN(newBalance) && newBalance !== currentBalance) {
+                const difference = newBalance - currentBalance;
+                transactions.push({
+                    id: Date.now(),
+                    date: new Date().toISOString().split('T')[0],
+                    type: difference > 0 ? 'income' : 'expense',
+                    amount: Math.abs(difference),
+                    account: accountName,
+                    category: 'Adjustment',
+                    description: 'Manual Balance Correction'
+                });
+                saveData();
+                updateUI();
+            }
+        }
+    }
+
+    document.getElementById('transaction-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+
+        const dateVal = document.getElementById('date').value;
+        const amountVal = parseFloat(document.getElementById('amount').value);
+        const descVal = document.getElementById('description').value;
+
+        if(!dateVal || isNaN(amountVal) || !descVal) {
+            alert("Please fill out the form properly.");
+            return;
+        }
+
+        transactions.push({
+            id: Date.now(),
+            date: dateVal,
+            type: document.getElementById('type').value,
+            amount: amountVal,
+            account: document.getElementById('account').value,
+            category: document.getElementById('category').value,
+            description: descVal
+        });
+
+        saveData();
+        updateUI();
+        
+        document.getElementById('amount').value = '';
+        document.getElementById('description').value = '';
+        document.getElementById('amount').focus();
+    });
+
+    function deleteTransaction(id) {
+        transactions = transactions.filter(t => t.id !== id);
+        saveData();
+        updateUI();
+    }
+
+    function makeEditable(element, id, field, type) {
+        if (element.querySelector('.inline-edit-input')) return; 
+        
+        const currentVal = transactions.find(t => t.id === id)[field];
+        let inputHTML = '';
+        
+        if (type === 'select-account') {
+            const options = accounts.map(a => `<option value="${a}" ${a === currentVal ? 'selected' : ''}>${a}</option>`).join('');
+            inputHTML = `<select class="inline-edit-input">${options}</select>`;
+        } else if (type === 'select-category') {
+            const options = categoriesList.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
+            inputHTML = `<select class="inline-edit-input">${options}</select>`;
+        } else if (type === 'number') {
+            inputHTML = `<input type="number" step="10" class="inline-edit-input" value="${currentVal}">`;
+        } else if (type === 'date') {
+            inputHTML = `<input type="date" class="inline-edit-input" value="${currentVal}">`;
+        } else {
+            inputHTML = `<input type="text" class="inline-edit-input" value="${currentVal}">`;
+        }
+
+        element.innerHTML = inputHTML;
+        
+        const inputEl = element.querySelector('.inline-edit-input');
+        inputEl.focus();
+
+        const saveEdit = () => {
+            const newVal = type === 'number' ? parseFloat(inputEl.value) : inputEl.value;
+            if (newVal || newVal === 0) {
+                const tIndex = transactions.findIndex(t => t.id === id);
+                transactions[tIndex][field] = newVal;
+                saveData();
+            }
+            updateUI(); 
+        };
+
+        inputEl.addEventListener('blur', saveEdit);
+        inputEl.addEventListener('keypress', function(e) { if (e.key === 'Enter') saveEdit(); });
+    }
+
+    function updateUI() {
+        const accSelect = document.getElementById('account');
+        accSelect.innerHTML = accounts.map(acc => `<option value="${acc}">${acc}</option>`).join('') + `<option value="_ADD_NEW_" style="color:var(--accent-teal); font-weight:bold;">+ Add New Bank...</option>`;
+        accSelect.value = accounts.includes(lastSelectedAccount) ? lastSelectedAccount : accounts[0];
+
+        const catSelect = document.getElementById('category');
+        catSelect.innerHTML = categoriesList.map(cat => `<option value="${cat}">${cat}</option>`).join('') + `<option value="_ADD_NEW_" style="color:var(--accent-teal); font-weight:bold;">+ Add New Category...</option>`;
+        catSelect.value = categoriesList.includes(lastSelectedCategory) ? lastSelectedCategory : categoriesList[0];
+
+        let totalBal = 0;
+        let accountBalances = {};
+        accounts.forEach(acc => accountBalances[acc] = 0);
+
+        const chronoTransactions = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
+        
+        let dailyData = {};
+        let runningTotal = 0;
+
+        chronoTransactions.forEach(t => {
+            if (!accountBalances[t.account]) accountBalances[t.account] = 0;
+            if (!dailyData[t.date]) dailyData[t.date] = { spent: 0, earned: 0, transactions: [], endOfDayBal: 0 };
+
+            if (t.type === 'income') {
+                totalBal += t.amount;
+                accountBalances[t.account] += t.amount;
+                runningTotal += t.amount;
+                dailyData[t.date].earned += t.amount;
+            } else {
+                totalBal -= t.amount;
+                accountBalances[t.account] -= t.amount;
+                runningTotal -= t.amount;
+                if(t.category !== 'Adjustment') dailyData[t.date].spent += t.amount;
+            }
+            
+            dailyData[t.date].endOfDayBal = runningTotal;
+            dailyData[t.date].transactions.push(t);
+        });
+
+        const dashboard = document.getElementById('dynamic-dashboard');
+        dashboard.innerHTML = `
+            <div class="card">
+                <span class="stat-title">Total Balance</span>
+                <div class="stat-value text-teal" onclick="openTotalDistributionModal()">
+                    EGP ${totalBal.toLocaleString()} <span class="edit-hint">✎ Edit</span>
+                </div>
+            </div>
+        `;
+
+        accounts.forEach(acc => {
+            dashboard.innerHTML += `
+                <div class="card">
+                    <span class="stat-title">${acc} Balance</span>
+                    <div class="stat-value" onclick="adjustBalance('${acc}', ${accountBalances[acc]})">
+                        EGP ${accountBalances[acc].toLocaleString()} <span class="edit-hint">✎ Edit</span>
+                    </div>
+                </div>
+            `;
+        });
+
+        const historyContainer = document.getElementById('history-container');
+        historyContainer.innerHTML = '';
+        const sortedDates = Object.keys(dailyData).sort((a, b) => new Date(b) - new Date(a));
+        
+        sortedDates.forEach(date => {
+            const data = dailyData[date];
+            const displayDate = date.split('-').reverse().join('/');
+            
+            const isPanelOpen = openPanels.has(date);
+            const displayStyle = isPanelOpen ? 'block' : 'none';
+            const iconStr = isPanelOpen ? '▼' : '►';
+            
+            let html = `
+            <div class="daily-group">
+                <div class="daily-header">
+                    <span class="clickable-date" onclick="togglePanel('${date}')">
+                        <span id="icon-${date}">${iconStr}</span> ${displayDate}
+                    </span>
+                    <div class="daily-stats">
+                        <span class="text-pink">Spent: EGP ${data.spent.toLocaleString()}</span>
+                        <span class="text-teal">In: EGP ${data.earned.toLocaleString()}</span>
+                        <span style="color:var(--text-muted)">| Total Bal: EGP ${data.endOfDayBal.toLocaleString()}</span>
+                    </div>
+                </div>
+                <div id="details-${date}" style="display: ${displayStyle};">
+                    <table class="daily-table"><tbody>`;
+            
+            data.transactions.sort((a, b) => b.id - a.id).forEach(t => {
+                const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';
+                const typeSymbol = t.type === 'income' ? '+' : '-';
+                
+                html += `
+                    <tr>
+                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')" width="40%">${t.description}</td>
+                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')" width="20%" style="color: var(--accent-orange); font-size: 0.85em;">${t.category}</td>
+                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')" width="20%" style="font-weight:bold;">${t.account}</td>
+                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')" width="15%"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+                        <td width="5%"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
+                    </tr>`;
+            });
+            html += `</tbody></table></div></div>`;
+            historyContainer.innerHTML += html;
+        });
+
+        if(sortedDates.length === 0) {
+            historyContainer.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 20px;">No transactions logged yet.</p>`;
+        }
+
+        const historyBody = document.getElementById('history-body');
+        historyBody.innerHTML = '';
+        const sortedTransactions = [...transactions].sort((a, b) => b.id - a.id);
+
+        sortedTransactions.forEach(t => {
+            const row = document.createElement('tr');
+            const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';
+            const typeSymbol = t.type === 'income' ? '+' : '-';
+            const displayDate = t.date ? t.date.split('-').reverse().join('/') : 'N/A';
+
+            row.innerHTML = `
+                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'date', 'date')" style="color: var(--text-muted); font-size: 0.9em;">${displayDate}</td>
+                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')">${t.description}</td>
+                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')"><span style="font-size: 0.85em; color: var(--accent-orange);">${t.category}</span></td>
+                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')"><span style="font-weight: bold;">${t.account}</span></td>
+                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+                <td><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
+            `;
+            historyBody.appendChild(row);
+        });
+    }
+
+    updateUI();
+</script>
 </body>
 </html>
