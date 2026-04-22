@@ -18,7 +18,6 @@
             --highlight: rgba(255, 255, 255, 0.1);
         }
 
-        /* Prevents iOS double-tap zoom so our double-click edit works perfectly */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
@@ -79,7 +78,6 @@
         .form-group { display: flex; flex-direction: column; gap: 5px; }
         .form-group.full-width { grid-column: 1 / -1; }
 
-        /* Font size 16px is required to stop iOS Safari from auto-zooming on tap */
         input, select, button {
             background-color: #2c2c2e;
             border: 1px solid var(--border-color);
@@ -89,6 +87,7 @@
             font-size: 16px; 
             font-family: inherit;
             box-sizing: border-box;
+            width: 100%;
         }
 
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
@@ -108,7 +107,8 @@
         
         .btn-secondary { background-color: #3a3a3c; color: var(--text-main); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        /* Default Desktop Table Styles */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { color: var(--text-muted); font-weight: normal; }
 
@@ -116,7 +116,7 @@
         td.editable:hover { background-color: var(--highlight); border-radius: 4px; }
 
         .inline-edit-input {
-            width: 100%; padding: 8px; margin: -8px; box-sizing: border-box;
+            width: 100%; padding: 8px; box-sizing: border-box;
             background: #000; border: 1px solid var(--accent-teal); color: #fff; font-size: 16px;
         }
 
@@ -125,8 +125,8 @@
         .badge-expense { background: rgba(255, 55, 95, 0.2); color: var(--accent-pink); }
 
         .delete-btn {
-            background: transparent; color: var(--accent-pink); padding: 8px; width: auto;
-            border: 1px solid var(--accent-pink); font-size: 0.8em; border-radius: 6px;
+            background: transparent; color: var(--accent-pink); padding: 8px 12px; width: auto;
+            border: 1px solid var(--accent-pink); font-size: 0.8em; border-radius: 6px; display: inline-block;
         }
         
         .delete-btn-modal {
@@ -166,34 +166,64 @@
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; padding: 5px; }
         .edit-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
-        .edit-row input { flex: 1; }
 
-        /* --- MOBILE OPTIMIZATION --- */
-        @media (max-width: 600px) {
+        /* --- EXTREME MOBILE OPTIMIZATION --- */
+        @media (max-width: 650px) {
             body { padding: 10px; }
             .card { padding: 15px; }
             
-            /* Stack form items vertically on small screens */
             .form-grid { display: flex; flex-direction: column; }
-            
-            /* Dashboard grid: Total on top row, accounts side by side underneath */
             .dashboard { grid-template-columns: 1fr 1fr; }
             .dashboard .card:first-child { grid-column: 1 / -1; }
             
-            .stat-value { font-size: 1.5em; }
+            /* Destroy the table layout and turn rows into flex cards */
+            table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
+            thead { display: none; /* Hide standard column headers */ }
             
-            /* Squish tables to fit screens */
-            table { font-size: 0.85em; }
-            th, td { padding: 10px 4px; }
-            .daily-table td { padding: 10px 8px; }
+            tr { 
+                margin-bottom: 15px; 
+                background: rgba(255,255,255,0.03); 
+                border-radius: 8px; 
+                border: 1px solid var(--border-color); 
+            }
             
-            /* Stack daily stats so they don't break boundaries */
-            .daily-stats { flex-direction: column; align-items: flex-end; gap: 4px; font-size: 0.85em; }
-            .daily-header { align-items: flex-start; }
+            td { 
+                display: flex; 
+                justify-content: space-between; 
+                align-items: center; 
+                text-align: right; 
+                border-bottom: 1px solid rgba(255,255,255,0.05); 
+                padding: 12px; 
+            }
             
-            /* Larger tap targets for touch */
-            input, select, button { padding: 14px; }
-            .delete-btn { padding: 10px; }
+            td:last-child { border-bottom: none; }
+            
+            /* Re-add labels dynamically to the left side of the row */
+            td::before { 
+                content: attr(data-label); 
+                font-weight: bold; 
+                color: var(--text-muted); 
+                text-transform: uppercase; 
+                font-size: 0.8em; 
+                text-align: left; 
+                margin-right: 15px; 
+            }
+
+            .daily-table tr { 
+                border: none; 
+                border-bottom: 1px dashed var(--border-color); 
+                border-radius: 0; 
+                background: transparent; 
+                margin-bottom: 0;
+            }
+            .daily-table tr:last-child { border-bottom: none; }
+            
+            /* Stack daily stats vertically */
+            .daily-header { align-items: flex-start; flex-direction: column; }
+            .daily-stats { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.85em; width: 100%; }
+            
+            /* Make inline editors take up the right side */
+            .inline-edit-input { width: 60%; margin: 0; }
         }
     </style>
 </head>
@@ -202,8 +232,7 @@
 <div class="container">
     <h1 style="color: var(--accent-teal);">Spendings Dashboard</h1>
 
-    <div class="dashboard" id="dynamic-dashboard">
-        </div>
+    <div class="dashboard" id="dynamic-dashboard"></div>
 
     <div class="card">
         <h2>Log Transaction</h2>
@@ -224,16 +253,14 @@
                     Account 
                     <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em; padding: 2px 5px; background: #2c2c2e; border-radius: 4px;" onclick="openManageModal('account')">✎ Edit</span>
                 </label>
-                <select id="account" required onchange="handleDynamicDropdown(this, 'account')">
-                    </select>
+                <select id="account" required onchange="handleDynamicDropdown(this, 'account')"></select>
             </div>
             <div class="form-group">
                 <label>
                     Category 
                     <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em; padding: 2px 5px; background: #2c2c2e; border-radius: 4px;" onclick="openManageModal('category')">✎ Edit</span>
                 </label>
-                <select id="category" required onchange="handleDynamicDropdown(this, 'category')">
-                    </select>
+                <select id="category" required onchange="handleDynamicDropdown(this, 'category')"></select>
             </div>
             <div class="form-group">
                 <label>Amount</label>
@@ -251,13 +278,12 @@
 
     <div class="card">
         <h2>History <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Tap date to expand)</span></h2>
-        <div id="history-container">
-            </div>
+        <div id="history-container"></div>
     </div>
 
     <div class="card">
         <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Double-tap to edit)</span></h2>
-        <div style="overflow-x: auto;">
+        <div> 
             <table>
                 <thead>
                     <tr>
@@ -269,8 +295,7 @@
                         <th>Action</th>
                     </tr>
                 </thead>
-                <tbody id="history-body">
-                    </tbody>
+                <tbody id="history-body"></tbody>
             </table>
         </div>
     </div>
@@ -295,8 +320,8 @@
         
         <div id="total-step-1">
             <p>Enter your new actual Total Balance:</p>
-            <input type="number" id="new-total-input" step="10" style="width:100%; margin-bottom: 15px; padding: 15px; font-size: 1.2em;">
-            <button type="button" style="width:100%;" onclick="goToDistribution()">Next Step</button>
+            <input type="number" id="new-total-input" step="10" style="margin-bottom: 15px; padding: 15px; font-size: 1.2em;">
+            <button type="button" onclick="goToDistribution()">Next Step</button>
         </div>
 
         <div id="total-step-2" style="display:none;">
@@ -308,7 +333,7 @@
                 <span id="left-to-assign" style="font-size: 2em; font-weight: bold;" class="text-pink">0</span>
             </div>
             
-            <button type="button" id="save-distribution-btn" style="width:100%; margin-top:15px;" onclick="saveTotalDistribution()" disabled>Save New Balances</button>
+            <button type="button" id="save-distribution-btn" style="margin-top:15px;" onclick="saveTotalDistribution()" disabled>Save New Balances</button>
         </div>
     </div>
 </div>
@@ -466,9 +491,9 @@
         
         accounts.forEach(acc => {
             container.innerHTML += `
-                <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
+                <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
                     <label style="flex: 1; font-size: 1.1em; font-weight: bold;">${acc}</label>
-                    <input type="number" step="10" class="distrib-input" data-account="${acc}" value="${preDistribBalances[acc]}" oninput="updateRemaining()" style="flex: 2; text-align: right; font-size: 1.1em;">
+                    <input type="number" step="10" class="distrib-input" data-account="${acc}" value="${preDistribBalances[acc]}" oninput="updateRemaining()" style="flex: 2; text-align: right; font-size: 1.1em; margin: 0;">
                 </div>
             `;
         });
@@ -702,20 +727,21 @@
                         <span style="color:var(--text-muted)">Total Bal: EGP ${data.endOfDayBal.toLocaleString()}</span>
                     </div>
                 </div>
-                <div id="details-${date}" style="display: ${displayStyle}; overflow-x: auto;">
+                <div id="details-${date}" style="display: ${displayStyle};">
                     <table class="daily-table"><tbody>`;
             
             data.transactions.sort((a, b) => b.id - a.id).forEach(t => {
                 const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';
                 const typeSymbol = t.type === 'income' ? '+' : '-';
                 
+                // Added data-labels here so the CSS can grab them on mobile!
                 html += `
                     <tr>
-                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')" width="40%">${t.description}</td>
-                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')" width="20%" style="color: var(--accent-orange); font-size: 0.85em;">${t.category}</td>
-                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')" width="20%" style="font-weight:bold;">${t.account}</td>
-                        <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')" width="15%"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
-                        <td width="5%"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
+                        <td data-label="Desc" class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')" width="40%">${t.description}</td>
+                        <td data-label="Category" class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')" width="20%" style="color: var(--accent-orange); font-size: 0.85em;">${t.category}</td>
+                        <td data-label="Account" class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')" width="20%" style="font-weight:bold;">${t.account}</td>
+                        <td data-label="Amount" class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')" width="15%"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+                        <td data-label="Action" width="5%"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
                     </tr>`;
             });
             html += `</tbody></table></div></div>`;
@@ -736,13 +762,14 @@
             const typeSymbol = t.type === 'income' ? '+' : '-';
             const displayDate = t.date ? t.date.split('-').reverse().join('/') : 'N/A';
 
+            // Added data-labels here too!
             row.innerHTML = `
-                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'date', 'date')" style="color: var(--text-muted); font-size: 0.9em;">${displayDate}</td>
-                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')">${t.description}</td>
-                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')"><span style="font-size: 0.85em; color: var(--accent-orange);">${t.category}</span></td>
-                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')"><span style="font-weight: bold;">${t.account}</span></td>
-                <td class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
-                <td><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
+                <td data-label="Date" class="editable" ondblclick="makeEditable(this, ${t.id}, 'date', 'date')" style="color: var(--text-muted); font-size: 0.9em;">${displayDate}</td>
+                <td data-label="Desc" class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')">${t.description}</td>
+                <td data-label="Category" class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')"><span style="font-size: 0.85em; color: var(--accent-orange);">${t.category}</span></td>
+                <td data-label="Account" class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')"><span style="font-weight: bold;">${t.account}</span></td>
+                <td data-label="Amount" class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+                <td data-label="Action"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
             `;
             historyBody.appendChild(row);
         });
