@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Personal Finance Tracker</title>
     <style>
         :root {
@@ -18,13 +18,15 @@
             --highlight: rgba(255, 255, 255, 0.1);
         }
 
+        /* Prevents iOS double-tap zoom so our double-click edit works perfectly */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             box-sizing: border-box;
+            touch-action: manipulation; 
         }
 
         .container { max-width: 900px; margin: 0 auto; }
@@ -77,14 +79,16 @@
         .form-group { display: flex; flex-direction: column; gap: 5px; }
         .form-group.full-width { grid-column: 1 / -1; }
 
+        /* Font size 16px is required to stop iOS Safari from auto-zooming on tap */
         input, select, button {
             background-color: #2c2c2e;
             border: 1px solid var(--border-color);
             color: var(--text-main);
             padding: 12px;
             border-radius: 8px;
-            font-size: 1em;
+            font-size: 16px; 
             font-family: inherit;
+            box-sizing: border-box;
         }
 
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
@@ -104,32 +108,31 @@
         
         .btn-secondary { background-color: #3a3a3c; color: var(--text-main); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { color: var(--text-muted); font-weight: normal; }
 
-        td.editable { cursor: pointer; transition: background 0.2s; }
+        td.editable { cursor: pointer; transition: background 0.2s; touch-action: manipulation; }
         td.editable:hover { background-color: var(--highlight); border-radius: 4px; }
 
         .inline-edit-input {
             width: 100%; padding: 8px; margin: -8px; box-sizing: border-box;
-            background: #000; border: 1px solid var(--accent-teal); color: #fff;
+            background: #000; border: 1px solid var(--accent-teal); color: #fff; font-size: 16px;
         }
 
-        .type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; }
+        .type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; white-space: nowrap; }
         .badge-income { background: rgba(48, 209, 88, 0.2); color: var(--accent-teal); }
         .badge-expense { background: rgba(255, 55, 95, 0.2); color: var(--accent-pink); }
 
         .delete-btn {
-            background: transparent; color: var(--accent-pink); padding: 5px; width: auto;
-            border: 1px solid var(--accent-pink); font-size: 0.8em;
+            background: transparent; color: var(--accent-pink); padding: 8px; width: auto;
+            border: 1px solid var(--accent-pink); font-size: 0.8em; border-radius: 6px;
         }
         
         .delete-btn-modal {
             background: rgba(255, 55, 95, 0.1); color: var(--accent-pink); padding: 10px 15px; width: auto;
             border: 1px solid var(--accent-pink); font-size: 1.1em; border-radius: 8px; cursor: pointer;
         }
-        .delete-btn-modal:hover { background: var(--accent-pink); color: #fff; }
 
         .daily-group {
             border: 1px solid var(--border-color);
@@ -139,7 +142,7 @@
             background-color: #2c2c2e;
         }
         
-        .daily-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; }
+        .daily-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         
         .clickable-date {
             color: var(--accent-purple); font-weight: bold; cursor: pointer;
@@ -149,7 +152,7 @@
 
         .daily-stats { display: flex; gap: 15px; font-size: 0.9em; font-weight: bold; }
         .daily-table { background-color: var(--card-bg); margin-top: 0; }
-        .daily-table td { padding: 10px 15px; font-size: 0.9em; border-bottom: 1px solid var(--border-color); }
+        .daily-table td { padding: 12px 15px; font-size: 0.9em; border-bottom: 1px solid var(--border-color); }
 
         /* Modal Styles */
         .modal-overlay {
@@ -157,14 +160,41 @@
             background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;
         }
         .modal-box {
-            background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 450px;
-            border: 1px solid var(--border-color); max-height: 80vh; overflow-y: auto;
+            background: var(--card-bg); padding: 20px; border-radius: 12px; width: 95%; max-width: 450px;
+            border: 1px solid var(--border-color); max-height: 85vh; overflow-y: auto; box-sizing: border-box;
         }
         .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; }
-        .modal-close:hover { color: var(--accent-pink); }
-        .edit-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; }
+        .modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; padding: 5px; }
+        .edit-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
         .edit-row input { flex: 1; }
+
+        /* --- MOBILE OPTIMIZATION --- */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .card { padding: 15px; }
+            
+            /* Stack form items vertically on small screens */
+            .form-grid { display: flex; flex-direction: column; }
+            
+            /* Dashboard grid: Total on top row, accounts side by side underneath */
+            .dashboard { grid-template-columns: 1fr 1fr; }
+            .dashboard .card:first-child { grid-column: 1 / -1; }
+            
+            .stat-value { font-size: 1.5em; }
+            
+            /* Squish tables to fit screens */
+            table { font-size: 0.85em; }
+            th, td { padding: 10px 4px; }
+            .daily-table td { padding: 10px 8px; }
+            
+            /* Stack daily stats so they don't break boundaries */
+            .daily-stats { flex-direction: column; align-items: flex-end; gap: 4px; font-size: 0.85em; }
+            .daily-header { align-items: flex-start; }
+            
+            /* Larger tap targets for touch */
+            input, select, button { padding: 14px; }
+            .delete-btn { padding: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -192,7 +222,7 @@
             <div class="form-group">
                 <label>
                     Account 
-                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em;" onclick="openManageModal('account')">✎ Edit</span>
+                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em; padding: 2px 5px; background: #2c2c2e; border-radius: 4px;" onclick="openManageModal('account')">✎ Edit</span>
                 </label>
                 <select id="account" required onchange="handleDynamicDropdown(this, 'account')">
                     </select>
@@ -200,7 +230,7 @@
             <div class="form-group">
                 <label>
                     Category 
-                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em;" onclick="openManageModal('category')">✎ Edit</span>
+                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em; padding: 2px 5px; background: #2c2c2e; border-radius: 4px;" onclick="openManageModal('category')">✎ Edit</span>
                 </label>
                 <select id="category" required onchange="handleDynamicDropdown(this, 'category')">
                     </select>
@@ -220,13 +250,13 @@
     </div>
 
     <div class="card">
-        <h2>History <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Click date to expand and edit)</span></h2>
+        <h2>History <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Tap date to expand)</span></h2>
         <div id="history-container">
             </div>
     </div>
 
     <div class="card">
-        <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Double-click any item to edit)</span></h2>
+        <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Double-tap to edit)</span></h2>
         <div style="overflow-x: auto;">
             <table>
                 <thead>
@@ -412,7 +442,6 @@
         totalInput.value = '';
         setTimeout(() => totalInput.focus(), 100);
 
-        // Get snapshot of current balances
         preDistribBalances = {};
         accounts.forEach(acc => preDistribBalances[acc] = 0);
         transactions.forEach(t => {
@@ -436,7 +465,6 @@
         container.innerHTML = '';
         
         accounts.forEach(acc => {
-            // UPDATED: Changed step="0.01" to step="10" for the distribution inputs
             container.innerHTML += `
                 <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between;">
                     <label style="flex: 1; font-size: 1.1em; font-weight: bold;">${acc}</label>
@@ -671,10 +699,10 @@
                     <div class="daily-stats">
                         <span class="text-pink">Spent: EGP ${data.spent.toLocaleString()}</span>
                         <span class="text-teal">In: EGP ${data.earned.toLocaleString()}</span>
-                        <span style="color:var(--text-muted)">| Total Bal: EGP ${data.endOfDayBal.toLocaleString()}</span>
+                        <span style="color:var(--text-muted)">Total Bal: EGP ${data.endOfDayBal.toLocaleString()}</span>
                     </div>
                 </div>
-                <div id="details-${date}" style="display: ${displayStyle};">
+                <div id="details-${date}" style="display: ${displayStyle}; overflow-x: auto;">
                     <table class="daily-table"><tbody>`;
             
             data.transactions.sort((a, b) => b.id - a.id).forEach(t => {
