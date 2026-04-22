@@ -25,7 +25,7 @@
             margin: 0;
             padding: 15px;
             box-sizing: border-box;
-            touch-action: manipulation; 
+            touch-action: manipulation; /* Reinforces anti-zoom */
         }
 
         .container { max-width: 900px; margin: 0 auto; }
@@ -84,10 +84,20 @@
             color: var(--text-main);
             padding: 12px;
             border-radius: 8px;
-            font-size: 16px; 
+            font-size: 16px; /* Locks out iOS auto-zoom */
             font-family: inherit;
             box-sizing: border-box;
             width: 100%;
+        }
+
+        /* Hides the tiny up/down arrows on number inputs */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield; 
         }
 
         input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
@@ -107,7 +117,6 @@
         
         .btn-secondary { background-color: #3a3a3c; color: var(--text-main); }
 
-        /* Default Desktop Table Styles */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
         th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
         th { color: var(--text-muted); font-weight: normal; }
@@ -154,7 +163,6 @@
         .daily-table { background-color: var(--card-bg); margin-top: 0; }
         .daily-table td { padding: 12px 15px; font-size: 0.9em; border-bottom: 1px solid var(--border-color); }
 
-        /* Modal Styles */
         .modal-overlay {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;
@@ -167,7 +175,6 @@
         .modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; padding: 5px; }
         .edit-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
 
-        /* --- EXTREME MOBILE OPTIMIZATION --- */
         @media (max-width: 650px) {
             body { padding: 10px; }
             .card { padding: 15px; }
@@ -176,9 +183,8 @@
             .dashboard { grid-template-columns: 1fr 1fr; }
             .dashboard .card:first-child { grid-column: 1 / -1; }
             
-            /* Destroy the table layout and turn rows into flex cards */
             table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
-            thead { display: none; /* Hide standard column headers */ }
+            thead { display: none; }
             
             tr { 
                 margin-bottom: 15px; 
@@ -198,7 +204,6 @@
             
             td:last-child { border-bottom: none; }
             
-            /* Re-add labels dynamically to the left side of the row */
             td::before { 
                 content: attr(data-label); 
                 font-weight: bold; 
@@ -218,11 +223,9 @@
             }
             .daily-table tr:last-child { border-bottom: none; }
             
-            /* Stack daily stats vertically */
             .daily-header { align-items: flex-start; flex-direction: column; }
             .daily-stats { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.85em; width: 100%; }
             
-            /* Make inline editors take up the right side */
             .inline-edit-input { width: 60%; margin: 0; }
         }
     </style>
@@ -264,7 +267,7 @@
             </div>
             <div class="form-group">
                 <label>Amount</label>
-                <input type="number" id="amount" step="10" placeholder="e.g. 400" required>
+                <input type="number" id="amount" step="10" inputmode="decimal" placeholder="e.g. 400" required>
             </div>
             <div class="form-group full-width">
                 <label>Description</label>
@@ -282,7 +285,7 @@
     </div>
 
     <div class="card">
-        <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Double-tap to edit)</span></h2>
+        <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Tap item to edit)</span></h2>
         <div> 
             <table>
                 <thead>
@@ -320,7 +323,7 @@
         
         <div id="total-step-1">
             <p>Enter your new actual Total Balance:</p>
-            <input type="number" id="new-total-input" step="10" style="margin-bottom: 15px; padding: 15px; font-size: 1.2em;">
+            <input type="number" id="new-total-input" step="10" inputmode="decimal" style="margin-bottom: 15px; padding: 15px; font-size: 1.2em;">
             <button type="button" onclick="goToDistribution()">Next Step</button>
         </div>
 
@@ -493,7 +496,7 @@
             container.innerHTML += `
                 <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
                     <label style="flex: 1; font-size: 1.1em; font-weight: bold;">${acc}</label>
-                    <input type="number" step="10" class="distrib-input" data-account="${acc}" value="${preDistribBalances[acc]}" oninput="updateRemaining()" style="flex: 2; text-align: right; font-size: 1.1em; margin: 0;">
+                    <input type="number" step="10" inputmode="decimal" class="distrib-input" data-account="${acc}" value="${preDistribBalances[acc]}" oninput="updateRemaining()" style="flex: 2; text-align: right; font-size: 1.1em; margin: 0;">
                 </div>
             `;
         });
@@ -618,7 +621,7 @@
             const options = categoriesList.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
             inputHTML = `<select class="inline-edit-input">${options}</select>`;
         } else if (type === 'number') {
-            inputHTML = `<input type="number" step="10" class="inline-edit-input" value="${currentVal}">`;
+            inputHTML = `<input type="number" step="10" inputmode="decimal" class="inline-edit-input" value="${currentVal}">`;
         } else if (type === 'date') {
             inputHTML = `<input type="date" class="inline-edit-input" value="${currentVal}">`;
         } else {
@@ -734,13 +737,13 @@
                 const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';
                 const typeSymbol = t.type === 'income' ? '+' : '-';
                 
-                // Added data-labels here so the CSS can grab them on mobile!
+                // Changed ondblclick to onclick
                 html += `
                     <tr>
-                        <td data-label="Desc" class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')" width="40%">${t.description}</td>
-                        <td data-label="Category" class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')" width="20%" style="color: var(--accent-orange); font-size: 0.85em;">${t.category}</td>
-                        <td data-label="Account" class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')" width="20%" style="font-weight:bold;">${t.account}</td>
-                        <td data-label="Amount" class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')" width="15%"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+                        <td data-label="Desc" class="editable" onclick="makeEditable(this, ${t.id}, 'description', 'text')" width="40%">${t.description}</td>
+                        <td data-label="Category" class="editable" onclick="makeEditable(this, ${t.id}, 'category', 'select-category')" width="20%" style="color: var(--accent-orange); font-size: 0.85em;">${t.category}</td>
+                        <td data-label="Account" class="editable" onclick="makeEditable(this, ${t.id}, 'account', 'select-account')" width="20%" style="font-weight:bold;">${t.account}</td>
+                        <td data-label="Amount" class="editable" onclick="makeEditable(this, ${t.id}, 'amount', 'number')" width="15%"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
                         <td data-label="Action" width="5%"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
                     </tr>`;
             });
@@ -762,13 +765,13 @@
             const typeSymbol = t.type === 'income' ? '+' : '-';
             const displayDate = t.date ? t.date.split('-').reverse().join('/') : 'N/A';
 
-            // Added data-labels here too!
+            // Changed ondblclick to onclick
             row.innerHTML = `
-                <td data-label="Date" class="editable" ondblclick="makeEditable(this, ${t.id}, 'date', 'date')" style="color: var(--text-muted); font-size: 0.9em;">${displayDate}</td>
-                <td data-label="Desc" class="editable" ondblclick="makeEditable(this, ${t.id}, 'description', 'text')">${t.description}</td>
-                <td data-label="Category" class="editable" ondblclick="makeEditable(this, ${t.id}, 'category', 'select-category')"><span style="font-size: 0.85em; color: var(--accent-orange);">${t.category}</span></td>
-                <td data-label="Account" class="editable" ondblclick="makeEditable(this, ${t.id}, 'account', 'select-account')"><span style="font-weight: bold;">${t.account}</span></td>
-                <td data-label="Amount" class="editable" ondblclick="makeEditable(this, ${t.id}, 'amount', 'number')"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+                <td data-label="Date" class="editable" onclick="makeEditable(this, ${t.id}, 'date', 'date')" style="color: var(--text-muted); font-size: 0.9em;">${displayDate}</td>
+                <td data-label="Desc" class="editable" onclick="makeEditable(this, ${t.id}, 'description', 'text')">${t.description}</td>
+                <td data-label="Category" class="editable" onclick="makeEditable(this, ${t.id}, 'category', 'select-category')"><span style="font-size: 0.85em; color: var(--accent-orange);">${t.category}</span></td>
+                <td data-label="Account" class="editable" onclick="makeEditable(this, ${t.id}, 'account', 'select-account')"><span style="font-weight: bold;">${t.account}</span></td>
+                <td data-label="Amount" class="editable" onclick="makeEditable(this, ${t.id}, 'amount', 'number')"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
                 <td data-label="Action"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
             `;
             historyBody.appendChild(row);
