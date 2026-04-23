@@ -1,784 +1,709 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Personal Finance Tracker</title>
-    <style>
-        :root {
-            --bg-color: #000000;
-            --card-bg: #1c1c1e;
-            --text-main: #ffffff;
-            --text-muted: #8e8e93;
-            --accent-teal: #30d158;
-            --accent-pink: #ff375f;
-            --accent-orange: #ff9f0a;
-            --accent-purple: #bf5af2;
-            --border-color: #38383a;
-            --highlight: rgba(255, 255, 255, 0.1);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Personal Finance Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+        --bg-color: #000000;
+        --card-bg: #1c1c1e;
+        --text-main: #ffffff;
+        --text-muted: #8e8e93;
+        --accent-teal: #30d158;
+        --accent-pink: #ff375f;
+        --accent-orange: #ff9f0a;
+        --accent-purple: #bf5af2;
+        --accent-blue: #0a84ff;
+        --border-color: #38383a;
+        --highlight: rgba(255, 255, 255, 0.1);
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            margin: 0;
-            padding: 15px;
-            box-sizing: border-box;
-            touch-action: manipulation; /* Reinforces anti-zoom */
-        }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        margin: 0;
+        padding: 15px;
+        box-sizing: border-box;
+        touch-action: manipulation;
+    }
 
-        .container { max-width: 900px; margin: 0 auto; }
-        h1, h2, h3 { margin-top: 0; }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1, h2, h3 { margin-top: 0; }
 
-        .dashboard {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 25px;
-        }
+    /* Navigation Tabs */
+    .tab-container { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab-btn {
+        flex: 1; padding: 12px; text-align: center; background: #2c2c2e;
+        border-radius: 8px; font-weight: bold; color: var(--text-muted); cursor: pointer; transition: 0.2s;
+    }
+    .tab-btn.active { background: var(--accent-teal); color: #000; }
 
-        .card {
-            background-color: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
-        }
+    .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+    .card { background-color: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); margin-bottom: 20px; }
 
-        .stat-title {
-            font-size: 0.9em;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            display: block;
-        }
+    .stat-title { font-size: 0.9em; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: block; }
+    .stat-value { font-size: 1.8em; font-weight: bold; cursor: pointer; transition: opacity 0.2s; display: inline-block; }
+    .stat-value:hover { opacity: 0.7; }
+    .edit-hint { font-size: 0.4em; color: var(--text-muted); vertical-align: middle; margin-left: 5px; }
 
-        .stat-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            display: inline-block;
-        }
-        
-        .stat-value:hover { opacity: 0.7; }
-        .edit-hint { font-size: 0.4em; color: var(--text-muted); vertical-align: middle; margin-left: 5px; }
+    .text-teal { color: var(--accent-teal); }
+    .text-pink { color: var(--accent-pink); }
+    .text-orange { color: var(--accent-orange); }
 
-        .text-teal { color: var(--accent-teal); }
-        .text-pink { color: var(--accent-pink); }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full-width { grid-column: 1 / -1; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 15px;
-        }
+    input, select, button {
+        background-color: #2c2c2e; border: 1px solid var(--border-color); color: var(--text-main);
+        padding: 12px; border-radius: 8px; font-size: 16px; font-family: inherit; box-sizing: border-box; width: 100%;
+    }
+    input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
+    input:focus, select:focus { outline: none; border-color: var(--accent-teal); }
 
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-group.full-width { grid-column: 1 / -1; }
+    button { background-color: var(--accent-teal); color: #000; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
+    button:hover { opacity: 0.8; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-secondary { background-color: #3a3a3c; color: var(--text-main); }
+    .btn-filter { background: #2c2c2e; color: var(--text-muted); border: 1px solid var(--border-color); padding: 8px 12px; margin-right: 5px; margin-bottom: 10px; width: auto; font-size: 0.9em; }
+    .btn-filter.active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); }
 
-        input, select, button {
-            background-color: #2c2c2e;
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 16px; /* Locks out iOS auto-zoom */
-            font-family: inherit;
-            box-sizing: border-box;
-            width: 100%;
-        }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    th { color: var(--text-muted); font-weight: normal; }
+    td.editable { cursor: pointer; transition: background 0.2s; touch-action: manipulation; }
+    td.editable:hover { background-color: var(--highlight); border-radius: 4px; }
+    .inline-edit-input { width: 100%; padding: 8px; box-sizing: border-box; background: #000; border: 1px solid var(--accent-teal); color: #fff; font-size: 16px; }
 
-        /* Hides the tiny up/down arrows on number inputs */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type="number"] {
-            -moz-appearance: textfield; 
-        }
+    .type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; white-space: nowrap; }
+    .badge-income { background: rgba(48, 209, 88, 0.2); color: var(--accent-teal); }
+    .badge-expense { background: rgba(255, 55, 95, 0.2); color: var(--accent-pink); }
+    .delete-btn { background: transparent; color: var(--accent-pink); padding: 8px 12px; width: auto; border: 1px solid var(--accent-pink); font-size: 0.8em; border-radius: 6px; display: inline-block; }
+    .delete-btn-modal { background: rgba(255, 55, 95, 0.1); color: var(--accent-pink); padding: 10px 15px; width: auto; border: 1px solid var(--accent-pink); font-size: 1.1em; border-radius: 8px; cursor: pointer; }
 
-        input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(1); }
-        input:focus, select:focus { outline: none; border-color: var(--accent-teal); }
+    .daily-group { border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 15px; overflow: hidden; background-color: #2c2c2e; }
+    .daily-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .clickable-date { color: var(--accent-purple); font-weight: bold; cursor: pointer; user-select: none; font-size: 1.1em; transition: opacity 0.2s; }
+    .clickable-date:hover { opacity: 0.8; text-decoration: underline; }
+    .daily-stats { display: flex; gap: 15px; font-size: 0.9em; font-weight: bold; }
+    .daily-table { background-color: var(--card-bg); margin-top: 0; }
+    .daily-table td { padding: 12px 15px; font-size: 0.9em; border-bottom: 1px solid var(--border-color); }
 
-        button {
-            background-color: var(--accent-teal);
-            color: #000;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            transition: opacity 0.2s;
-        }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+    .modal-box { background: var(--card-bg); padding: 20px; border-radius: 12px; width: 95%; max-width: 500px; border: 1px solid var(--border-color); max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; padding: 5px; }
+    .edit-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
 
-        button:hover { opacity: 0.8; }
-        button:disabled { opacity: 0.4; cursor: not-allowed; }
-        
-        .btn-secondary { background-color: #3a3a3c; color: var(--text-main); }
+    .insight-box { background: #2c2c2e; padding: 15px; border-radius: 8px; text-align: center; flex: 1; min-width: 120px; }
+    .insight-val { display: block; font-size: 1.4em; font-weight: bold; margin-top: 5px; color: var(--text-main); }
+    .chart-container { position: relative; height: 300px; width: 100%; margin-bottom: 20px; }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: auto; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        th { color: var(--text-muted); font-weight: normal; }
+    @media (max-width: 650px) {
+        body { padding: 10px; }
+        .card { padding: 15px; }
+        .form-grid { display: flex; flex-direction: column; }
+        .dashboard { grid-template-columns: 1fr 1fr; }
+        .dashboard .card:first-child { grid-column: 1 / -1; }
 
-        td.editable { cursor: pointer; transition: background 0.2s; touch-action: manipulation; }
-        td.editable:hover { background-color: var(--highlight); border-radius: 4px; }
-
-        .inline-edit-input {
-            width: 100%; padding: 8px; box-sizing: border-box;
-            background: #000; border: 1px solid var(--accent-teal); color: #fff; font-size: 16px;
-        }
-
-        .type-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; white-space: nowrap; }
-        .badge-income { background: rgba(48, 209, 88, 0.2); color: var(--accent-teal); }
-        .badge-expense { background: rgba(255, 55, 95, 0.2); color: var(--accent-pink); }
-
-        .delete-btn {
-            background: transparent; color: var(--accent-pink); padding: 8px 12px; width: auto;
-            border: 1px solid var(--accent-pink); font-size: 0.8em; border-radius: 6px; display: inline-block;
-        }
-        
-        .delete-btn-modal {
-            background: rgba(255, 55, 95, 0.1); color: var(--accent-pink); padding: 10px 15px; width: auto;
-            border: 1px solid var(--accent-pink); font-size: 1.1em; border-radius: 8px; cursor: pointer;
-        }
-
-        .daily-group {
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            margin-bottom: 15px;
-            overflow: hidden;
-            background-color: #2c2c2e;
-        }
-        
-        .daily-header { padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        
-        .clickable-date {
-            color: var(--accent-purple); font-weight: bold; cursor: pointer;
-            user-select: none; font-size: 1.1em; transition: opacity 0.2s;
-        }
-        .clickable-date:hover { opacity: 0.8; text-decoration: underline; }
-
-        .daily-stats { display: flex; gap: 15px; font-size: 0.9em; font-weight: bold; }
-        .daily-table { background-color: var(--card-bg); margin-top: 0; }
-        .daily-table td { padding: 12px 15px; font-size: 0.9em; border-bottom: 1px solid var(--border-color); }
-
-        .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000;
-        }
-        .modal-box {
-            background: var(--card-bg); padding: 20px; border-radius: 12px; width: 95%; max-width: 450px;
-            border: 1px solid var(--border-color); max-height: 85vh; overflow-y: auto; box-sizing: border-box;
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-close { cursor: pointer; color: var(--text-muted); font-size: 1.5em; padding: 5px; }
-        .edit-row { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
-
-        @media (max-width: 650px) {
-            body { padding: 10px; }
-            .card { padding: 15px; }
-            
-            .form-grid { display: flex; flex-direction: column; }
-            .dashboard { grid-template-columns: 1fr 1fr; }
-            .dashboard .card:first-child { grid-column: 1 / -1; }
-            
-            table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
-            thead { display: none; }
-            
-            tr { 
-                margin-bottom: 15px; 
-                background: rgba(255,255,255,0.03); 
-                border-radius: 8px; 
-                border: 1px solid var(--border-color); 
-            }
-            
-            td { 
-                display: flex; 
-                justify-content: space-between; 
-                align-items: center; 
-                text-align: right; 
-                border-bottom: 1px solid rgba(255,255,255,0.05); 
-                padding: 12px; 
-            }
-            
-            td:last-child { border-bottom: none; }
-            
-            td::before { 
-                content: attr(data-label); 
-                font-weight: bold; 
-                color: var(--text-muted); 
-                text-transform: uppercase; 
-                font-size: 0.8em; 
-                text-align: left; 
-                margin-right: 15px; 
-            }
-
-            .daily-table tr { 
-                border: none; 
-                border-bottom: 1px dashed var(--border-color); 
-                border-radius: 0; 
-                background: transparent; 
-                margin-bottom: 0;
-            }
-            .daily-table tr:last-child { border-bottom: none; }
-            
-            .daily-header { align-items: flex-start; flex-direction: column; }
-            .daily-stats { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.85em; width: 100%; }
-            
-            .inline-edit-input { width: 60%; margin: 0; }
-        }
-    </style>
+        table, thead, tbody, th, td, tr { display: block; width: 100%; box-sizing: border-box; }
+        thead { display: none; }
+        tr { margin-bottom: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--border-color); }
+        td { display: flex; justify-content: space-between; align-items: center; text-align: right; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px; }
+        td:last-child { border-bottom: none; }
+        td::before { content: attr(data-label); font-weight: bold; color: var(--text-muted); text-transform: uppercase; font-size: 0.8em; text-align: left; margin-right: 15px; }
+        .daily-table tr { border: none; border-bottom: 1px dashed var(--border-color); border-radius: 0; background: transparent; margin-bottom: 0; }
+        .daily-table tr:last-child { border-bottom: none; }
+        .daily-header { align-items: flex-start; flex-direction: column; }
+        .daily-stats { flex-direction: column; align-items: flex-start; gap: 4px; font-size: 0.85em; width: 100%; }
+        .inline-edit-input { width: 60%; margin: 0; }
+    }
+  </style>
 </head>
 <body>
 
 <div class="container">
-    <h1 style="color: var(--accent-teal);">Spendings Dashboard</h1>
+  <h1 style="color: var(--accent-teal); margin-bottom: 10px;">Spendings App</h1>
 
+  <div class="tab-container">
+    <div class="tab-btn active" id="tab-main" onclick="switchTab('main')">Ledger</div>
+    <div class="tab-btn" id="tab-analytics" onclick="switchTab('analytics')">Analytics</div>
+  </div>
+
+  <div id="main-view">
     <div class="dashboard" id="dynamic-dashboard"></div>
 
     <div class="card">
-        <h2>Log Transaction</h2>
-        <form id="transaction-form" class="form-grid" novalidate>
-            <div class="form-group">
-                <label>Date</label>
-                <input type="date" id="date" required>
-            </div>
-            <div class="form-group">
-                <label>Type</label>
-                <select id="type" required>
-                    <option value="expense">Expense (-)</option>
-                    <option value="income">Income (+)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>
-                    Account 
-                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em; padding: 2px 5px; background: #2c2c2e; border-radius: 4px;" onclick="openManageModal('account')">✎ Edit</span>
-                </label>
-                <select id="account" required onchange="handleDynamicDropdown(this, 'account')"></select>
-            </div>
-            <div class="form-group">
-                <label>
-                    Category 
-                    <span class="edit-hint" style="cursor:pointer; float:right; font-size: 0.9em; padding: 2px 5px; background: #2c2c2e; border-radius: 4px;" onclick="openManageModal('category')">✎ Edit</span>
-                </label>
-                <select id="category" required onchange="handleDynamicDropdown(this, 'category')"></select>
-            </div>
-            <div class="form-group">
-                <label>Amount</label>
-                <input type="number" id="amount" step="10" inputmode="decimal" placeholder="e.g. 400" required>
-            </div>
-            <div class="form-group full-width">
-                <label>Description</label>
-                <input type="text" id="description" placeholder="e.g. uber gam3a, coffee + croissant" required>
-            </div>
-            <div class="form-group full-width">
-                <button type="submit">Add to Ledger</button>
-            </div>
-        </form>
-    </div>
-
-    <div class="card">
-        <h2>History <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Tap date to expand)</span></h2>
-        <div id="history-container"></div>
-    </div>
-
-    <div class="card">
-        <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Tap item to edit)</span></h2>
-        <div> 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Desc</th>
-                        <th>Category</th>
-                        <th>Account</th>
-                        <th>Amount</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody id="history-body"></tbody>
-            </table>
+      <h2>Log Transaction</h2>
+      <form id="transaction-form" class="form-grid" novalidate>
+        <div class="form-group"><label>Date</label><input type="date" id="date" required></div>
+        <div class="form-group"><label>Type</label><select id="type" required><option value="expense">Expense (-)</option><option value="income">Income (+)</option></select></div>
+        <div class="form-group">
+          <label>Account <span class="edit-hint" style="cursor:pointer; float:right; background: #2c2c2e; padding: 2px 5px; border-radius: 4px;" onclick="openManageModal('account')">✎ Edit</span></label>
+          <select id="account" required onchange="handleDynamicDropdown(this, 'account')"></select>
         </div>
+        <div class="form-group">
+          <label>Category <span class="edit-hint" style="cursor:pointer; float:right; background: #2c2c2e; padding: 2px 5px; border-radius: 4px;" onclick="openManageModal('category')">✎ Edit</span></label>
+          <select id="category" required onchange="handleDynamicDropdown(this, 'category')"></select>
+        </div>
+        <div class="form-group"><label>Amount</label><input type="number" id="amount" step="10" inputmode="decimal" placeholder="e.g. 400" required></div>
+        <div class="form-group full-width"><label>Description</label><input type="text" id="description" placeholder="e.g. uber, lunch, lent ahmed money" required></div>
+        <div class="form-group full-width"><button type="submit">Add to Ledger</button></div>
+      </form>
     </div>
+
+    <div class="card">
+      <h2>History <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Tap date to expand)</span></h2>
+      <div id="history-container"></div>
+    </div>
+
+    <div class="card">
+      <h2>Master Ledger <span style="font-size: 0.5em; color: var(--text-muted); font-weight: normal; vertical-align: middle;">(Tap item to edit)</span></h2>
+      <div>
+        <table>
+          <thead><tr><th>Date</th><th>Desc</th><th>Category</th><th>Account</th><th>Amount</th><th>Action</th></tr></thead>
+          <tbody id="history-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="analytics-view" style="display: none;">
+
+    <div class="card" style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <div class="insight-box"><span style="font-size: 0.8em; color: var(--text-muted); text-transform: uppercase;">Avg Daily Spend</span><span class="insight-val text-pink" id="insight-avg">0</span></div>
+      <div class="insight-box"><span style="font-size: 0.8em; color: var(--text-muted); text-transform: uppercase;">Top Category</span><span class="insight-val text-orange" id="insight-top-cat">-</span></div>
+      <div class="insight-box"><span style="font-size: 0.8em; color: var(--text-muted); text-transform: uppercase;">Largest Expense</span><span class="insight-val" id="insight-max">-</span></div>
+    </div>
+
+    <div class="card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">Spending Trend</h2>
+        <div>
+          <button class="btn-filter" id="btn-7" onclick="renderAnalytics(7)">7 Days</button>
+          <button class="btn-filter active" id="btn-30" onclick="renderAnalytics(30)">30 Days</button>
+          <button class="btn-filter" id="btn-all" onclick="renderAnalytics(9999)">All Time</button>
+        </div>
+      </div>
+      <div class="chart-container"><canvas id="lineChart"></canvas></div>
+    </div>
+
+    <div class="dashboard" style="margin-bottom: 0;">
+      <div class="card">
+        <h2>Category Breakdown</h2>
+        <div class="chart-container" style="height: 250px;"><canvas id="pieChart"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>Cash Flow (Monthly)</h2>
+        <div class="chart-container" style="height: 250px;"><canvas id="barChart"></canvas></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div id="manage-modal" class="modal-overlay">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h2 id="modal-title" style="margin:0;">Manage</h2>
-            <span class="modal-close" onclick="closeModal('manage-modal')">✖</span>
-        </div>
-        <div id="modal-list"></div>
-    </div>
+  <div class="modal-box">
+    <div class="modal-header"><h2 id="modal-title" style="margin:0;">Manage</h2><span class="modal-close" onclick="closeModal('manage-modal')">✖</span></div>
+    <div id="modal-list"></div>
+  </div>
 </div>
 
 <div id="total-modal" class="modal-overlay">
-    <div class="modal-box">
-        <div class="modal-header">
-            <h2 style="margin:0;">Adjust Total Balance</h2>
-            <span class="modal-close" onclick="closeModal('total-modal')">✖</span>
-        </div>
-        
-        <div id="total-step-1">
-            <p>Enter your new actual Total Balance:</p>
-            <input type="number" id="new-total-input" step="10" inputmode="decimal" style="margin-bottom: 15px; padding: 15px; font-size: 1.2em;">
-            <button type="button" onclick="goToDistribution()">Next Step</button>
-        </div>
-
-        <div id="total-step-2" style="display:none;">
-            <p>Distribute EGP <strong id="display-new-total" class="text-teal">0</strong> among your accounts:</p>
-            <div id="distribution-inputs"></div>
-            
-            <div style="background: #2c2c2e; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;">
-                <span style="color: var(--text-muted); font-size: 0.9em; text-transform: uppercase;">Left to Assign</span><br>
-                <span id="left-to-assign" style="font-size: 2em; font-weight: bold;" class="text-pink">0</span>
-            </div>
-            
-            <button type="button" id="save-distribution-btn" style="margin-top:15px;" onclick="saveTotalDistribution()" disabled>Save New Balances</button>
-        </div>
+  <div class="modal-box">
+    <div class="modal-header"><h2 style="margin:0;">Adjust Total Balance</h2><span class="modal-close" onclick="closeModal('total-modal')">✖</span></div>
+    <div id="total-step-1">
+      <p>Enter your new actual Total Balance:</p>
+      <input type="number" id="new-total-input" step="10" inputmode="decimal" style="margin-bottom: 15px; padding: 15px; font-size: 1.2em;">
+      <button type="button" onclick="goToDistribution()">Next Step</button>
     </div>
+    <div id="total-step-2" style="display:none;">
+      <p>Distribute EGP <strong id="display-new-total" class="text-teal">0</strong> among your accounts:</p>
+      <div id="distribution-inputs"></div>
+      <div style="background: #2c2c2e; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: center;">
+        <span style="color: var(--text-muted); font-size: 0.9em; text-transform: uppercase;">Left to Assign</span><br>
+        <span id="left-to-assign" style="font-size: 2em; font-weight: bold;" class="text-pink">0</span>
+      </div>
+      <button type="button" id="save-distribution-btn" style="margin-top:15px;" onclick="saveTotalDistribution()" disabled>Save New Balances</button>
+    </div>
+  </div>
+</div>
+
+<div id="owed-modal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 600px;">
+    <div class="modal-header"><h2 style="margin:0; color: var(--accent-orange);">Owed Ledger</h2><span class="modal-close" onclick="closeModal('owed-modal')">✖</span></div>
+    <p style="color: var(--text-muted); font-size: 0.9em; margin-top: -10px;">Expenses = You lent money. Incomes = You got paid back.</p>
+    <div>
+      <table>
+        <thead><tr><th>Date</th><th>Desc</th><th>Account</th><th>Amount</th></tr></thead>
+        <tbody id="owed-body"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
-    let transactions = JSON.parse(localStorage.getItem('finance_transactions')) || [];
-    let accounts = JSON.parse(localStorage.getItem('finance_accounts')) || ['Cash', 'CIB'];
-    let categoriesList = JSON.parse(localStorage.getItem('finance_categories')) || ["Transport", "Food & Drink", "Charity", "Shopping", "Work/Salary", "Adjustment", "Other"];
-    
-    let openPanels = new Set(); 
-    let currentEditType = ''; 
-    let currentTargetTotal = 0;
-    let preDistribBalances = {};
+  let transactions = JSON.parse(localStorage.getItem('finance_transactions')) || [];
+  let accounts = JSON.parse(localStorage.getItem('finance_accounts')) || ['Cash', 'CIB'];
+  let categoriesList = JSON.parse(localStorage.getItem('finance_categories')) || ["Transport", "Food & Drink", "Charity", "Shopping", "Work/Salary", "Adjustment", "Owed", "Other"];
 
-    if(!document.getElementById('date').value) document.getElementById('date').valueAsDate = new Date();
+  // Ensure 'Owed' exists in categories if loading from old save
+  if (!categoriesList.includes('Owed')) {
+      categoriesList.push('Owed');
+      localStorage.setItem('finance_categories', JSON.stringify(categoriesList));
+  }
 
-    let lastSelectedAccount = accounts[0];
-    let lastSelectedCategory = categoriesList[0];
+  let openPanels = new Set();
+  let currentEditType = '';
+  let currentTargetTotal = 0;
+  let preDistribBalances = {};
 
-    function saveData() {
-        localStorage.setItem('finance_transactions', JSON.stringify(transactions));
-        localStorage.setItem('finance_accounts', JSON.stringify(accounts));
-        localStorage.setItem('finance_categories', JSON.stringify(categoriesList));
-    }
+  let chartLine, chartPie, chartBar; // Chart instances
 
-    function togglePanel(dateStr) {
-        const panel = document.getElementById(`details-${dateStr}`);
-        const icon = document.getElementById(`icon-${dateStr}`);
-        if (panel.style.display === 'none') {
-            panel.style.display = 'block';
-            icon.innerText = '▼';
-            openPanels.add(dateStr);
-        } else {
-            panel.style.display = 'none';
-            icon.innerText = '►';
-            openPanels.delete(dateStr);
-        }
-    }
+  if(!document.getElementById('date').value) document.getElementById('date').valueAsDate = new Date();
 
-    function handleDynamicDropdown(selectElement, type) {
-        if (selectElement.value === '_ADD_NEW_') {
-            const newItem = prompt(`Enter new ${type} name:`);
-            if (newItem && newItem.trim() !== '') {
-                const cleanItem = newItem.trim();
-                if (type === 'account' && !accounts.includes(cleanItem)) {
-                    accounts.push(cleanItem);
-                    lastSelectedAccount = cleanItem;
-                } else if (type === 'category' && !categoriesList.includes(cleanItem)) {
-                    categoriesList.push(cleanItem);
-                    lastSelectedCategory = cleanItem;
-                }
-                saveData();
-                updateUI();
-            } else {
-                updateUI();
-            }
-        } else {
-            if (type === 'account') lastSelectedAccount = selectElement.value;
-            if (type === 'category') lastSelectedCategory = selectElement.value;
-        }
-    }
+  let lastSelectedAccount = accounts[0];
+  let lastSelectedCategory = categoriesList[0];
 
-    function openManageModal(type) {
-        currentEditType = type;
-        document.getElementById('manage-modal').style.display = 'flex';
-        document.getElementById('modal-title').innerText = type === 'account' ? 'Manage Banks & Accounts' : 'Manage Categories';
-        renderModalList();
-    }
+  // Chart.js Default Dark Theme Settings
+  Chart.defaults.color = '#8e8e93';
+  Chart.defaults.borderColor = '#38383a';
 
-    function renderModalList() {
-        const listContainer = document.getElementById('modal-list');
-        let dataList = currentEditType === 'account' ? accounts : categoriesList;
-        
-        listContainer.innerHTML = '';
-        dataList.forEach((item, index) => {
-            const isSystem = (currentEditType === 'category' && item === 'Adjustment');
-            const disabledAttr = isSystem ? 'disabled' : '';
-            const colorAttr = isSystem ? 'color: var(--text-muted);' : '';
-            
-            listContainer.innerHTML += `
-                <div class="edit-row">
-                    <input type="text" id="modal-input-${index}" value="${item}" ${disabledAttr} style="${colorAttr}">
-                    <button type="button" class="btn-secondary" onclick="saveListItem(${index})" ${disabledAttr}>Save</button>
-                    <button type="button" class="delete-btn-modal" onclick="deleteListItem(${index})" title="Delete" ${disabledAttr}>✖</button>
-                </div>
-            `;
-        });
-    }
+  function saveData() {
+      localStorage.setItem('finance_transactions', JSON.stringify(transactions));
+      localStorage.setItem('finance_accounts', JSON.stringify(accounts));
+      localStorage.setItem('finance_categories', JSON.stringify(categoriesList));
+  }
 
-    function saveListItem(index) {
-        const newVal = document.getElementById(`modal-input-${index}`).value.trim();
-        if (!newVal) return;
+  function switchTab(tab) {
+      document.getElementById('main-view').style.display = tab === 'main' ? 'block' : 'none';
+      document.getElementById('analytics-view').style.display = tab === 'analytics' ? 'block' : 'none';
+      document.getElementById('tab-main').classList.toggle('active', tab === 'main');
+      document.getElementById('tab-analytics').classList.toggle('active', tab === 'analytics');
+      if(tab === 'analytics') renderAnalytics(30);
+  }
 
-        let dataList = currentEditType === 'account' ? accounts : categoriesList;
-        const oldVal = dataList[index];
-        dataList[index] = newVal;
+  function togglePanel(dateStr) {
+      const panel = document.getElementById(`details-${dateStr}`);
+      const icon = document.getElementById(`icon-${dateStr}`);
+      if (panel.style.display === 'none') { panel.style.display = 'block'; icon.innerText = '▼'; openPanels.add(dateStr); }
+      else { panel.style.display = 'none'; icon.innerText = '►'; openPanels.delete(dateStr); }
+  }
 
-        transactions.forEach(t => {
-            if (currentEditType === 'account' && t.account === oldVal) t.account = newVal;
-            if (currentEditType === 'category' && t.category === oldVal) t.category = newVal;
-        });
+  function handleDynamicDropdown(selectElement, type) {
+      if (selectElement.value === '_ADD_NEW_') {
+          const newItem = prompt(`Enter new ${type} name:`);
+          if (newItem && newItem.trim() !== '') {
+              const cleanItem = newItem.trim();
+              if (type === 'account' && !accounts.includes(cleanItem)) { accounts.push(cleanItem); lastSelectedAccount = cleanItem; }
+              else if (type === 'category' && !categoriesList.includes(cleanItem)) { categoriesList.push(cleanItem); lastSelectedCategory = cleanItem; }
+              saveData(); updateUI();
+          } else { updateUI(); }
+      } else {
+          if (type === 'account') lastSelectedAccount = selectElement.value;
+          if (type === 'category') lastSelectedCategory = selectElement.value;
+      }
+  }
 
-        saveData();
-        updateUI();
-        
-        if (currentEditType === 'account' && lastSelectedAccount === oldVal) lastSelectedAccount = newVal;
-        if (currentEditType === 'category' && lastSelectedCategory === oldVal) lastSelectedCategory = newVal;
-        renderModalList();
-    }
+  function openManageModal(type) {
+      currentEditType = type;
+      document.getElementById('manage-modal').style.display = 'flex';
+      document.getElementById('modal-title').innerText = type === 'account' ? 'Manage Banks & Accounts' : 'Manage Categories';
+      renderModalList();
+  }
 
-    function deleteListItem(index) {
-        if (confirm("Delete this? Past transactions will keep the name, but it will be removed from your options.")) {
-            let dataList = currentEditType === 'account' ? accounts : categoriesList;
-            dataList.splice(index, 1);
-            saveData();
-            updateUI();
-            renderModalList();
-        }
-    }
+  function renderModalList() {
+      const listContainer = document.getElementById('modal-list');
+      let dataList = currentEditType === 'account' ? accounts : categoriesList;
+      listContainer.innerHTML = '';
+      dataList.forEach((item, index) => {
+          const isSystem = (currentEditType === 'category' && (item === 'Adjustment' || item === 'Owed'));
+          const disabledAttr = isSystem ? 'disabled' : '';
+          const colorAttr = isSystem ? 'color: var(--text-muted);' : '';
+          listContainer.innerHTML += `
+              <div class="edit-row">
+                  <input type="text" id="modal-input-${index}" value="${item}" ${disabledAttr} style="${colorAttr}">
+                  <button type="button" class="btn-secondary" onclick="saveListItem(${index})" ${disabledAttr}>Save</button>
+                  <button type="button" class="delete-btn-modal" onclick="deleteListItem(${index})" title="Delete" ${disabledAttr}>✖</button>
+              </div>`;
+      });
+  }
 
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
+  function saveListItem(index) {
+      const newVal = document.getElementById(`modal-input-${index}`).value.trim();
+      if (!newVal) return;
+      let dataList = currentEditType === 'account' ? accounts : categoriesList;
+      const oldVal = dataList[index];
+      dataList[index] = newVal;
+      transactions.forEach(t => {
+          if (currentEditType === 'account' && t.account === oldVal) t.account = newVal;
+          if (currentEditType === 'category' && t.category === oldVal) t.category = newVal;
+      });
+      saveData(); updateUI();
+      if (currentEditType === 'account' && lastSelectedAccount === oldVal) lastSelectedAccount = newVal;
+      if (currentEditType === 'category' && lastSelectedCategory === oldVal) lastSelectedCategory = newVal;
+      renderModalList();
+  }
 
-    function openTotalDistributionModal() {
-        document.getElementById('total-modal').style.display = 'flex';
-        document.getElementById('total-step-1').style.display = 'block';
-        document.getElementById('total-step-2').style.display = 'none';
-        
-        const totalInput = document.getElementById('new-total-input');
-        totalInput.value = '';
-        setTimeout(() => totalInput.focus(), 100);
+  function deleteListItem(index) {
+      if (confirm("Delete this? Past transactions will keep the name, but it will be removed from options.")) {
+          let dataList = currentEditType === 'account' ? accounts : categoriesList;
+          dataList.splice(index, 1);
+          saveData(); updateUI(); renderModalList();
+      }
+  }
 
-        preDistribBalances = {};
-        accounts.forEach(acc => preDistribBalances[acc] = 0);
-        transactions.forEach(t => {
-            if (accounts.includes(t.account)) {
-                if(t.type === 'income') preDistribBalances[t.account] += t.amount;
-                else preDistribBalances[t.account] -= t.amount;
-            }
-        });
-    }
+  function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
 
-    function goToDistribution() {
-        const val = parseFloat(document.getElementById('new-total-input').value);
-        if (isNaN(val)) return;
-        
-        currentTargetTotal = val;
-        document.getElementById('total-step-1').style.display = 'none';
-        document.getElementById('total-step-2').style.display = 'block';
-        document.getElementById('display-new-total').innerText = val.toLocaleString();
-        
-        const container = document.getElementById('distribution-inputs');
-        container.innerHTML = '';
-        
-        accounts.forEach(acc => {
-            container.innerHTML += `
-                <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
-                    <label style="flex: 1; font-size: 1.1em; font-weight: bold;">${acc}</label>
-                    <input type="number" step="10" inputmode="decimal" class="distrib-input" data-account="${acc}" value="${preDistribBalances[acc]}" oninput="updateRemaining()" style="flex: 2; text-align: right; font-size: 1.1em; margin: 0;">
-                </div>
-            `;
-        });
-        
-        updateRemaining();
-    }
+  // -- OWED LOGIC --
+  function openOwedModal() {
+      document.getElementById('owed-modal').style.display = 'flex';
+      const tbody = document.getElementById('owed-body');
+      tbody.innerHTML = '';
 
-    function updateRemaining() {
-        const inputs = document.querySelectorAll('.distrib-input');
-        let currentSum = 0;
-        inputs.forEach(input => currentSum += (parseFloat(input.value) || 0));
-        
-        const remaining = currentTargetTotal - currentSum;
-        const remainingEl = document.getElementById('left-to-assign');
-        
-        if (Math.abs(remaining) < 0.01) {
-            remainingEl.innerText = "0";
-            remainingEl.className = 'text-teal';
-            document.getElementById('save-distribution-btn').disabled = false;
-        } else {
-            remainingEl.innerText = remaining > 0 ? "+" + remaining.toLocaleString() : remaining.toLocaleString();
-            remainingEl.className = 'text-pink';
-            document.getElementById('save-distribution-btn').disabled = true;
-        }
-    }
+      let owedTrans = transactions.filter(t => t.category === 'Owed').sort((a,b) => b.id - a.id);
+      if(owedTrans.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted);">No owed transactions yet.</td></tr>`;
+          return;
+      }
 
-    function saveTotalDistribution() {
-        const inputs = document.querySelectorAll('.distrib-input');
-        const today = new Date().toISOString().split('T')[0];
-        
-        inputs.forEach(input => {
-            const acc = input.getAttribute('data-account');
-            const newVal = parseFloat(input.value) || 0;
-            const diff = newVal - preDistribBalances[acc];
-            
-            if (Math.abs(diff) > 0.01) {
-                transactions.push({
-                    id: Date.now() + Math.floor(Math.random() * 1000), 
-                    date: today,
-                    type: diff > 0 ? 'income' : 'expense',
-                    amount: Math.abs(diff),
-                    account: acc,
-                    category: 'Adjustment',
-                    description: 'Total Balance Re-distribution'
-                });
-            }
-        });
-        
-        saveData();
-        updateUI();
-        closeModal('total-modal');
-    }
+      owedTrans.forEach(t => {
+          const displayDate = t.date.split('-').reverse().join('/');
+          const color = t.type === 'expense' ? 'var(--accent-pink)' : 'var(--accent-teal)';
+          const symbol = t.type === 'expense' ? '+' : '-'; // Expense adds to debt
+          tbody.innerHTML += `
+              <tr>
+                  <td data-label="Date" style="font-size:0.9em; color:var(--text-muted);">${displayDate}</td>
+                  <td data-label="Desc">${t.description}</td>
+                  <td data-label="Account" style="font-size:0.9em;">${t.account}</td>
+                  <td data-label="Amount" style="color:${color}; font-weight:bold;">${symbol}${t.amount}</td>
+              </tr>
+          `;
+      });
+  }
 
-    function adjustBalance(accountName, currentBalance) {
-        const input = prompt(`Current ${accountName} balance is EGP ${currentBalance}.\nEnter your ACTUAL current balance to adjust:`, currentBalance);
-        
-        if (input !== null && input !== "") {
-            const newBalance = parseFloat(input);
-            if (!isNaN(newBalance) && newBalance !== currentBalance) {
-                const difference = newBalance - currentBalance;
-                transactions.push({
-                    id: Date.now(),
-                    date: new Date().toISOString().split('T')[0],
-                    type: difference > 0 ? 'income' : 'expense',
-                    amount: Math.abs(difference),
-                    account: accountName,
-                    category: 'Adjustment',
-                    description: 'Manual Balance Correction'
-                });
-                saveData();
-                updateUI();
-            }
-        }
-    }
+  // -- TOTAL BALANCE DISTRIB LOGIC --
+  function openTotalDistributionModal() {
+      document.getElementById('total-modal').style.display = 'flex';
+      document.getElementById('total-step-1').style.display = 'block';
+      document.getElementById('total-step-2').style.display = 'none';
+      const totalInput = document.getElementById('new-total-input');
+      totalInput.value = '';
+      setTimeout(() => totalInput.focus(), 100);
 
-    document.getElementById('transaction-form').addEventListener('submit', function(e) {
-        e.preventDefault();
+      preDistribBalances = {};
+      accounts.forEach(acc => preDistribBalances[acc] = 0);
+      transactions.forEach(t => {
+          if (accounts.includes(t.account)) {
+              if(t.type === 'income') preDistribBalances[t.account] += t.amount;
+              else preDistribBalances[t.account] -= t.amount;
+          }
+      });
+  }
 
-        const dateVal = document.getElementById('date').value;
-        const amountVal = parseFloat(document.getElementById('amount').value);
-        const descVal = document.getElementById('description').value;
+  function goToDistribution() {
+      const val = parseFloat(document.getElementById('new-total-input').value);
+      if (isNaN(val)) return;
+      currentTargetTotal = val;
+      document.getElementById('total-step-1').style.display = 'none';
+      document.getElementById('total-step-2').style.display = 'block';
+      document.getElementById('display-new-total').innerText = val.toLocaleString();
+      const container = document.getElementById('distribution-inputs');
+      container.innerHTML = '';
+      accounts.forEach(acc => {
+          container.innerHTML += `
+              <div class="form-group" style="margin-bottom: 10px; display: flex; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px;">
+                  <label style="flex: 1; font-size: 1.1em; font-weight: bold;">${acc}</label>
+                  <input type="number" step="10" inputmode="decimal" class="distrib-input" data-account="${acc}" value="${preDistribBalances[acc]}" oninput="updateRemaining()" style="flex: 2; text-align: right; font-size: 1.1em; margin: 0;">
+              </div>`;
+      });
+      updateRemaining();
+  }
 
-        if(!dateVal || isNaN(amountVal) || !descVal) {
-            alert("Please fill out the form properly.");
-            return;
-        }
+  function updateRemaining() {
+      const inputs = document.querySelectorAll('.distrib-input');
+      let currentSum = 0;
+      inputs.forEach(input => currentSum += (parseFloat(input.value) || 0));
+      const remaining = currentTargetTotal - currentSum;
+      const remainingEl = document.getElementById('left-to-assign');
+      if (Math.abs(remaining) < 0.01) {
+          remainingEl.innerText = "0"; remainingEl.className = 'text-teal';
+          document.getElementById('save-distribution-btn').disabled = false;
+      } else {
+          remainingEl.innerText = remaining > 0 ? "+" + remaining.toLocaleString() : remaining.toLocaleString();
+          remainingEl.className = 'text-pink'; document.getElementById('save-distribution-btn').disabled = true;
+      }
+  }
 
-        transactions.push({
-            id: Date.now(),
-            date: dateVal,
-            type: document.getElementById('type').value,
-            amount: amountVal,
-            account: document.getElementById('account').value,
-            category: document.getElementById('category').value,
-            description: descVal
-        });
+  function saveTotalDistribution() {
+      const inputs = document.querySelectorAll('.distrib-input');
+      const today = new Date().toISOString().split('T')[0];
+      inputs.forEach(input => {
+          const acc = input.getAttribute('data-account');
+          const newVal = parseFloat(input.value) || 0;
+          const diff = newVal - preDistribBalances[acc];
+          if (Math.abs(diff) > 0.01) {
+              transactions.push({ id: Date.now() + Math.floor(Math.random() * 1000), date: today, type: diff > 0 ? 'income' : 'expense', amount: Math.abs(diff), account: acc, category: 'Adjustment', description: 'Total Balance Re-distribution' });
+          }
+      });
+      saveData(); updateUI(); closeModal('total-modal');
+  }
 
-        saveData();
-        updateUI();
-        
-        document.getElementById('amount').value = '';
-        document.getElementById('description').value = '';
-        document.getElementById('amount').focus();
-    });
+  function adjustBalance(accountName, currentBalance) {
+      const input = prompt(`Current ${accountName} balance is EGP ${currentBalance}.\nEnter your ACTUAL current balance to adjust:`, currentBalance);
+      if (input !== null && input !== "") {
+          const newBalance = parseFloat(input);
+          if (!isNaN(newBalance) && newBalance !== currentBalance) {
+              const difference = newBalance - currentBalance;
+              transactions.push({ id: Date.now(), date: new Date().toISOString().split('T')[0], type: difference > 0 ? 'income' : 'expense', amount: Math.abs(difference), account: accountName, category: 'Adjustment', description: 'Manual Balance Correction' });
+              saveData(); updateUI();
+          }
+      }
+  }
 
-    function deleteTransaction(id) {
-        transactions = transactions.filter(t => t.id !== id);
-        saveData();
-        updateUI();
-    }
+  document.getElementById('transaction-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const dateVal = document.getElementById('date').value;
+      const amountVal = parseFloat(document.getElementById('amount').value);
+      const descVal = document.getElementById('description').value;
+      if(!dateVal || isNaN(amountVal) || !descVal) return alert("Please fill out the form properly.");
 
-    function makeEditable(element, id, field, type) {
-        if (element.querySelector('.inline-edit-input')) return; 
-        
-        const currentVal = transactions.find(t => t.id === id)[field];
-        let inputHTML = '';
-        
-        if (type === 'select-account') {
-            const options = accounts.map(a => `<option value="${a}" ${a === currentVal ? 'selected' : ''}>${a}</option>`).join('');
-            inputHTML = `<select class="inline-edit-input">${options}</select>`;
-        } else if (type === 'select-category') {
-            const options = categoriesList.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
-            inputHTML = `<select class="inline-edit-input">${options}</select>`;
-        } else if (type === 'number') {
-            inputHTML = `<input type="number" step="10" inputmode="decimal" class="inline-edit-input" value="${currentVal}">`;
-        } else if (type === 'date') {
-            inputHTML = `<input type="date" class="inline-edit-input" value="${currentVal}">`;
-        } else {
-            inputHTML = `<input type="text" class="inline-edit-input" value="${currentVal}">`;
-        }
+      transactions.push({ id: Date.now(), date: dateVal, type: document.getElementById('type').value, amount: amountVal, account: document.getElementById('account').value, category: document.getElementById('category').value, description: descVal });
+      saveData(); updateUI();
+      document.getElementById('amount').value = ''; document.getElementById('description').value = ''; document.getElementById('amount').focus();
+  });
 
-        element.innerHTML = inputHTML;
-        
-        const inputEl = element.querySelector('.inline-edit-input');
-        inputEl.focus();
+  function deleteTransaction(id) { transactions = transactions.filter(t => t.id !== id); saveData(); updateUI(); }
 
-        const saveEdit = () => {
-            const newVal = type === 'number' ? parseFloat(inputEl.value) : inputEl.value;
-            if (newVal || newVal === 0) {
-                const tIndex = transactions.findIndex(t => t.id === id);
-                transactions[tIndex][field] = newVal;
-                saveData();
-            }
-            updateUI(); 
-        };
+  function makeEditable(element, id, field, type) {
+      if (element.querySelector('.inline-edit-input')) return;
+      const currentVal = transactions.find(t => t.id === id)[field];
+      let inputHTML = '';
+      if (type === 'select-account') {
+          const options = accounts.map(a => `<option value="${a}" ${a === currentVal ? 'selected' : ''}>${a}</option>`).join('');
+          inputHTML = `<select class="inline-edit-input">${options}</select>`;
+      } else if (type === 'select-category') {
+          const options = categoriesList.map(c => `<option value="${c}" ${c === currentVal ? 'selected' : ''}>${c}</option>`).join('');
+          inputHTML = `<select class="inline-edit-input">${options}</select>`;
+      } else if (type === 'number') { inputHTML = `<input type="number" step="10" inputmode="decimal" class="inline-edit-input" value="${currentVal}">`;
+      } else if (type === 'date') { inputHTML = `<input type="date" class="inline-edit-input" value="${currentVal}">`;
+      } else { inputHTML = `<input type="text" class="inline-edit-input" value="${currentVal}">`; }
+      element.innerHTML = inputHTML;
+      const inputEl = element.querySelector('.inline-edit-input'); inputEl.focus();
 
-        inputEl.addEventListener('blur', saveEdit);
-        inputEl.addEventListener('keypress', function(e) { if (e.key === 'Enter') saveEdit(); });
-    }
+      const saveEdit = () => {
+          const newVal = type === 'number' ? parseFloat(inputEl.value) : inputEl.value;
+          if (newVal || newVal === 0) { const tIndex = transactions.findIndex(t => t.id === id); transactions[tIndex][field] = newVal; saveData(); }
+          updateUI();
+      };
+      inputEl.addEventListener('blur', saveEdit);
+      inputEl.addEventListener('keypress', function(e) { if (e.key === 'Enter') saveEdit(); });
+  }
 
-    function updateUI() {
-        const accSelect = document.getElementById('account');
-        accSelect.innerHTML = accounts.map(acc => `<option value="${acc}">${acc}</option>`).join('') + `<option value="_ADD_NEW_" style="color:var(--accent-teal); font-weight:bold;">+ Add New Bank...</option>`;
-        accSelect.value = accounts.includes(lastSelectedAccount) ? lastSelectedAccount : accounts[0];
+  function updateUI() {
+      const accSelect = document.getElementById('account');
+      accSelect.innerHTML = accounts.map(acc => `<option value="${acc}">${acc}</option>`).join('') + `<option value="_ADD_NEW_" style="color:var(--accent-teal); font-weight:bold;">+ Add New Bank...</option>`;
+      accSelect.value = accounts.includes(lastSelectedAccount) ? lastSelectedAccount : accounts[0];
 
-        const catSelect = document.getElementById('category');
-        catSelect.innerHTML = categoriesList.map(cat => `<option value="${cat}">${cat}</option>`).join('') + `<option value="_ADD_NEW_" style="color:var(--accent-teal); font-weight:bold;">+ Add New Category...</option>`;
-        catSelect.value = categoriesList.includes(lastSelectedCategory) ? lastSelectedCategory : categoriesList[0];
+      const catSelect = document.getElementById('category');
+      catSelect.innerHTML = categoriesList.map(cat => `<option value="${cat}">${cat}</option>`).join('') + `<option value="_ADD_NEW_" style="color:var(--accent-teal); font-weight:bold;">+ Add New Category...</option>`;
+      catSelect.value = categoriesList.includes(lastSelectedCategory) ? lastSelectedCategory : categoriesList[0];
 
-        let totalBal = 0;
-        let accountBalances = {};
-        accounts.forEach(acc => accountBalances[acc] = 0);
+      let totalBal = 0;
+      let accountBalances = {};
+      accounts.forEach(acc => accountBalances[acc] = 0);
 
-        const chronoTransactions = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
-        
-        let dailyData = {};
-        let runningTotal = 0;
+      let owedTotal = 0; // Track money owed to you
+      const chronoTransactions = [...transactions].sort((a, b) => new Date(a.date) - new Date(b.date) || a.id - b.id);
 
-        chronoTransactions.forEach(t => {
-            if (!accountBalances[t.account]) accountBalances[t.account] = 0;
-            if (!dailyData[t.date]) dailyData[t.date] = { spent: 0, earned: 0, transactions: [], endOfDayBal: 0 };
+      let dailyData = {}; let runningTotal = 0;
 
-            if (t.type === 'income') {
-                totalBal += t.amount;
-                accountBalances[t.account] += t.amount;
-                runningTotal += t.amount;
-                dailyData[t.date].earned += t.amount;
-            } else {
-                totalBal -= t.amount;
-                accountBalances[t.account] -= t.amount;
-                runningTotal -= t.amount;
-                if(t.category !== 'Adjustment') dailyData[t.date].spent += t.amount;
-            }
-            
-            dailyData[t.date].endOfDayBal = runningTotal;
-            dailyData[t.date].transactions.push(t);
-        });
+      chronoTransactions.forEach(t => {
+          if (!accountBalances[t.account]) accountBalances[t.account] = 0;
+          if (!dailyData[t.date]) dailyData[t.date] = { spent: 0, earned: 0, transactions: [], endOfDayBal: 0 };
 
-        const dashboard = document.getElementById('dynamic-dashboard');
-        dashboard.innerHTML = `
-            <div class="card">
-                <span class="stat-title">Total Balance</span>
-                <div class="stat-value text-teal" onclick="openTotalDistributionModal()">
-                    EGP ${totalBal.toLocaleString()} <span class="edit-hint">✎ Edit</span>
-                </div>
-            </div>
-        `;
+          if (t.category === 'Owed') {
+              // If you log an Expense to "Owed", someone owes you money (debt goes UP)
+              if (t.type === 'expense') owedTotal += t.amount;
+              // If you log an Income to "Owed", they paid you back (debt goes DOWN)
+              else owedTotal -= t.amount;
+          }
 
-        accounts.forEach(acc => {
-            dashboard.innerHTML += `
-                <div class="card">
-                    <span class="stat-title">${acc} Balance</span>
-                    <div class="stat-value" onclick="adjustBalance('${acc}', ${accountBalances[acc]})">
-                        EGP ${accountBalances[acc].toLocaleString()} <span class="edit-hint">✎ Edit</span>
-                    </div>
-                </div>
-            `;
-        });
+          if (t.type === 'income') {
+              totalBal += t.amount; accountBalances[t.account] += t.amount; runningTotal += t.amount;
+              if(t.category !== 'Owed' && t.category !== 'Adjustment') dailyData[t.date].earned += t.amount;
+          } else {
+              totalBal -= t.amount; accountBalances[t.account] -= t.amount; runningTotal -= t.amount;
+              if(t.category !== 'Owed' && t.category !== 'Adjustment') dailyData[t.date].spent += t.amount;
+          }
+          dailyData[t.date].endOfDayBal = runningTotal;
+          dailyData[t.date].transactions.push(t);
+      });
 
-        const historyContainer = document.getElementById('history-container');
-        historyContainer.innerHTML = '';
-        const sortedDates = Object.keys(dailyData).sort((a, b) => new Date(b) - new Date(a));
-        
-        sortedDates.forEach(date => {
-            const data = dailyData[date];
-            const displayDate = date.split('-').reverse().join('/');
-            
-            const isPanelOpen = openPanels.has(date);
-            const displayStyle = isPanelOpen ? 'block' : 'none';
-            const iconStr = isPanelOpen ? '▼' : '►';
-            
-            let html = `
-            <div class="daily-group">
-                <div class="daily-header">
-                    <span class="clickable-date" onclick="togglePanel('${date}')">
-                        <span id="icon-${date}">${iconStr}</span> ${displayDate}
-                    </span>
-                    <div class="daily-stats">
-                        <span class="text-pink">Spent: EGP ${data.spent.toLocaleString()}</span>
-                        <span class="text-teal">In: EGP ${data.earned.toLocaleString()}</span>
-                        <span style="color:var(--text-muted)">Total Bal: EGP ${data.endOfDayBal.toLocaleString()}</span>
-                    </div>
-                </div>
-                <div id="details-${date}" style="display: ${displayStyle};">
-                    <table class="daily-table"><tbody>`;
-            
-            data.transactions.sort((a, b) => b.id - a.id).forEach(t => {
-                const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';
-                const typeSymbol = t.type === 'income' ? '+' : '-';
-                
-                // Changed ondblclick to onclick
-                html += `
-                    <tr>
-                        <td data-label="Desc" class="editable" onclick="makeEditable(this, ${t.id}, 'description', 'text')" width="40%">${t.description}</td>
-                        <td data-label="Category" class="editable" onclick="makeEditable(this, ${t.id}, 'category', 'select-category')" width="20%" style="color: var(--accent-orange); font-size: 0.85em;">${t.category}</td>
-                        <td data-label="Account" class="editable" onclick="makeEditable(this, ${t.id}, 'account', 'select-account')" width="20%" style="font-weight:bold;">${t.account}</td>
-                        <td data-label="Amount" class="editable" onclick="makeEditable(this, ${t.id}, 'amount', 'number')" width="15%"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
-                        <td data-label="Action" width="5%"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
-                    </tr>`;
-            });
-            html += `</tbody></table></div></div>`;
-            historyContainer.innerHTML += html;
-        });
+      // Prevent Owed from showing negative mathematically (though logic handles it)
+      if (owedTotal < 0) owedTotal = 0;
 
-        if(sortedDates.length === 0) {
-            historyContainer.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 20px;">No transactions logged yet.</p>`;
-        }
+      const dashboard = document.getElementById('dynamic-dashboard');
+      dashboard.innerHTML = `
+          <div class="card">
+              <span class="stat-title">Total Balance</span>
+              <div class="stat-value text-teal" onclick="openTotalDistributionModal()">EGP ${totalBal.toLocaleString()} <span class="edit-hint">✎ Edit</span></div>
+          </div>
+          <div class="card" style="border: 1px solid rgba(255,159,10,0.3);">
+              <span class="stat-title" style="color:var(--accent-orange);">Owed To Me</span>
+              <div class="stat-value text-orange" onclick="openOwedModal()">EGP ${owedTotal.toLocaleString()} <span class="edit-hint">👁 View</span></div>
+          </div>
+      `;
+      accounts.forEach(acc => {
+          dashboard.innerHTML += `<div class="card"><span class="stat-title">${acc} Balance</span><div class="stat-value" onclick="adjustBalance('${acc}', ${accountBalances[acc]})">EGP ${accountBalances[acc].toLocaleString()} <span class="edit-hint">✎ Edit</span></div></div>`;
+      });
 
-        const historyBody = document.getElementById('history-body');
-        historyBody.innerHTML = '';
-        const sortedTransactions = [...transactions].sort((a, b) => b.id - a.id);
+      const historyContainer = document.getElementById('history-container');
+      historyContainer.innerHTML = '';
+      const sortedDates = Object.keys(dailyData).sort((a, b) => new Date(b) - new Date(a));
 
-        sortedTransactions.forEach(t => {
-            const row = document.createElement('tr');
-            const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense';
-            const typeSymbol = t.type === 'income' ? '+' : '-';
-            const displayDate = t.date ? t.date.split('-').reverse().join('/') : 'N/A';
+      sortedDates.forEach(date => {
+          const data = dailyData[date]; const displayDate = date.split('-').reverse().join('/');
+          const isPanelOpen = openPanels.has(date); const displayStyle = isPanelOpen ? 'block' : 'none'; const iconStr = isPanelOpen ? '▼' : '►';
 
-            // Changed ondblclick to onclick
-            row.innerHTML = `
-                <td data-label="Date" class="editable" onclick="makeEditable(this, ${t.id}, 'date', 'date')" style="color: var(--text-muted); font-size: 0.9em;">${displayDate}</td>
-                <td data-label="Desc" class="editable" onclick="makeEditable(this, ${t.id}, 'description', 'text')">${t.description}</td>
-                <td data-label="Category" class="editable" onclick="makeEditable(this, ${t.id}, 'category', 'select-category')"><span style="font-size: 0.85em; color: var(--accent-orange);">${t.category}</span></td>
-                <td data-label="Account" class="editable" onclick="makeEditable(this, ${t.id}, 'account', 'select-account')"><span style="font-weight: bold;">${t.account}</span></td>
-                <td data-label="Amount" class="editable" onclick="makeEditable(this, ${t.id}, 'amount', 'number')"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
-                <td data-label="Action"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
-            `;
-            historyBody.appendChild(row);
-        });
-    }
+          let html = `
+          <div class="daily-group">
+              <div class="daily-header"><span class="clickable-date" onclick="togglePanel('${date}')"><span id="icon-${date}">${iconStr}</span> ${displayDate}</span>
+              <div class="daily-stats"><span class="text-pink">Spent: EGP ${data.spent.toLocaleString()}</span><span class="text-teal">In: EGP ${data.earned.toLocaleString()}</span><span style="color:var(--text-muted)">Total: EGP ${data.endOfDayBal.toLocaleString()}</span></div></div>
+              <div id="details-${date}" style="display: ${displayStyle};"><table class="daily-table"><tbody>`;
 
-    updateUI();
+          data.transactions.sort((a, b) => b.id - a.id).forEach(t => {
+              const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense'; const typeSymbol = t.type === 'income' ? '+' : '-';
+              html += `<tr>
+                      <td data-label="Desc" class="editable" onclick="makeEditable(this, ${t.id}, 'description', 'text')" width="40%">${t.description}</td>
+                      <td data-label="Category" class="editable" onclick="makeEditable(this, ${t.id}, 'category', 'select-category')" width="20%" style="color: var(--accent-orange); font-size: 0.85em;">${t.category}</td>
+                      <td data-label="Account" class="editable" onclick="makeEditable(this, ${t.id}, 'account', 'select-account')" width="20%" style="font-weight:bold;">${t.account}</td>
+                      <td data-label="Amount" class="editable" onclick="makeEditable(this, ${t.id}, 'amount', 'number')" width="15%"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+                      <td data-label="Action" width="5%"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
+                  </tr>`;
+          });
+          html += `</tbody></table></div></div>`;
+          historyContainer.innerHTML += html;
+      });
+
+      if(sortedDates.length === 0) historyContainer.innerHTML = `<p style="color: var(--text-muted); text-align: center; padding: 20px;">No transactions logged yet.</p>`;
+
+      const historyBody = document.getElementById('history-body'); historyBody.innerHTML = '';
+      const sortedTransactions = [...transactions].sort((a, b) => b.id - a.id);
+      sortedTransactions.forEach(t => {
+          const row = document.createElement('tr');
+          const typeClass = t.type === 'income' ? 'badge-income' : 'badge-expense'; const typeSymbol = t.type === 'income' ? '+' : '-';
+          const displayDate = t.date ? t.date.split('-').reverse().join('/') : 'N/A';
+          row.innerHTML = `
+              <td data-label="Date" class="editable" onclick="makeEditable(this, ${t.id}, 'date', 'date')" style="color: var(--text-muted); font-size: 0.9em;">${displayDate}</td>
+              <td data-label="Desc" class="editable" onclick="makeEditable(this, ${t.id}, 'description', 'text')">${t.description}</td>
+              <td data-label="Category" class="editable" onclick="makeEditable(this, ${t.id}, 'category', 'select-category')"><span style="font-size: 0.85em; color: var(--accent-orange);">${t.category}</span></td>
+              <td data-label="Account" class="editable" onclick="makeEditable(this, ${t.id}, 'account', 'select-account')"><span style="font-weight: bold;">${t.account}</span></td>
+              <td data-label="Amount" class="editable" onclick="makeEditable(this, ${t.id}, 'amount', 'number')"><span class="type-badge ${typeClass}">${typeSymbol}${t.amount}</span></td>
+              <td data-label="Action"><button class="delete-btn" onclick="deleteTransaction(${t.id})">X</button></td>
+          `;
+          historyBody.appendChild(row);
+      });
+
+      // If analytics tab is open, refresh it quietly
+      if(document.getElementById('analytics-view').style.display === 'block') {
+          const activeFilter = document.querySelector('.btn-filter.active').id.replace('btn-', '');
+          renderAnalytics(activeFilter === 'all' ? 9999 : parseInt(activeFilter));
+      }
+  }
+
+  // --- ANALYTICS ENGINE ---
+  function renderAnalytics(days) {
+      // Update Buttons
+      document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+      if(days === 7) document.getElementById('btn-7').classList.add('active');
+      else if(days === 30) document.getElementById('btn-30').classList.add('active');
+      else document.getElementById('btn-all').classList.add('active');
+
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+
+      // Filter Data
+      let filteredExpenses = [];
+      let categorySums = {};
+      let monthlyInOut = {};
+      let totalExpenseSum = 0;
+      let largestExpense = { amount: 0, desc: '-' };
+
+      transactions.forEach(t => {
+          const tDate = new Date(t.date);
+          if (tDate >= cutoffDate) {
+              // For Line & Pie charts, only use true expenses (Ignore Adjustment and Owed)
+              if (t.type === 'expense' && t.category !== 'Adjustment' && t.category !== 'Owed') {
+                  filteredExpenses.push(t);
+                  totalExpenseSum += t.amount;
+                  if(t.amount > largestExpense.amount) largestExpense = t;
+                  categorySums[t.category] = (categorySums[t.category] || 0) + t.amount;
+              }
+
+              // For Monthly Bar Chart, grab Income vs Expense (Ignore Adjustment)
+              if (t.category !== 'Adjustment') {
+                  const monthYear = t.date.substring(0, 7); // YYYY-MM
+                  if(!monthlyInOut[monthYear]) monthlyInOut[monthYear] = { inc: 0, exp: 0 };
+                  if(t.type === 'income') monthlyInOut[monthYear].inc += t.amount;
+                  else monthlyInOut[monthYear].exp += t.amount;
+              }
+          }
+      });
+
+      // 1. Update Insights
+      let uniqueDays = new Set(filteredExpenses.map(t => t.date)).size || 1;
+      document.getElementById('insight-avg').innerText = Math.round(totalExpenseSum / (days === 9999 ? uniqueDays : days)).toLocaleString();
+
+      let topCat = '-'; let maxCatVal = 0;
+      for (let cat in categorySums) { if (categorySums[cat] > maxCatVal) { maxCatVal = categorySums[cat]; topCat = cat; } }
+      document.getElementById('insight-top-cat').innerText = topCat;
+      document.getElementById('insight-max').innerText = largestExpense.amount > 0 ? largestExpense.amount.toLocaleString() : '-';
+
+      // 2. Line Chart (Spending over time)
+      let dailyLineData = {};
+      filteredExpenses.forEach(t => { dailyLineData[t.date] = (dailyLineData[t.date] || 0) + t.amount; });
+      const sortedLineDates = Object.keys(dailyLineData).sort((a,b) => new Date(a) - new Date(b));
+      const lineValues = sortedLineDates.map(d => dailyLineData[d]);
+      const lineLabels = sortedLineDates.map(d => d.split('-').slice(1).join('/')); // MM/DD
+
+      if(chartLine) chartLine.destroy();
+      chartLine = new Chart(document.getElementById('lineChart'), {
+          type: 'line',
+          data: { labels: lineLabels, datasets: [{ label: 'Daily Expense', data: lineValues, borderColor: '#ff375f', backgroundColor: 'rgba(255, 55, 95, 0.1)', fill: true, tension: 0.3 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+
+      // 3. Doughnut Chart (Categories)
+      const pieColors = ['#ff375f', '#ff9f0a', '#30d158', '#0a84ff', '#bf5af2', '#64d2ff', '#ffd60a'];
+      if(chartPie) chartPie.destroy();
+      chartPie = new Chart(document.getElementById('pieChart'), {
+          type: 'doughnut',
+          data: { labels: Object.keys(categorySums), datasets: [{ data: Object.values(categorySums), backgroundColor: pieColors, borderWidth: 0 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#fff', font: {size: 10} } } } }
+      });
+
+      // 4. Bar Chart (Monthly Cashflow)
+      const sortedMonths = Object.keys(monthlyInOut).sort();
+      const incData = sortedMonths.map(m => monthlyInOut[m].inc);
+      const expData = sortedMonths.map(m => monthlyInOut[m].exp);
+
+      if(chartBar) chartBar.destroy();
+      chartBar = new Chart(document.getElementById('barChart'), {
+          type: 'bar',
+          data: { labels: sortedMonths, datasets: [
+              { label: 'Income', data: incData, backgroundColor: '#30d158' },
+              { label: 'Expense', data: expData, backgroundColor: '#ff375f' }
+          ]},
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#fff' } } } }
+      });
+  }
+
+  updateUI();
 </script>
 </body>
 </html>
